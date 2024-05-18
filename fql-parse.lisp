@@ -38,7 +38,10 @@
 (defrule word (and (or #\_ (alpha-char-p character)) (* (or #\_ (alphanumericp character))))
   (:text t))
 
-(defrule single-quoted-string (and #\' (* (not #\')) #\')
+(defrule single-quote-escape (and #\' #\')
+  (:constant #\'))
+
+(defrule single-quoted-string (and #\' (* (or single-quote-escape (not #\'))) #\')
   (:destructure (open text close)
     (declare (ignore open close))
     text)

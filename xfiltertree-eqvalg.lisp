@@ -7,7 +7,13 @@
 
 (defun quote-value (value)
   (cond ((numberp value) value)
-        (t (format nil "'~A'" (remove #\' value)))))
+        (t (with-output-to-string (out)
+             (loop initially (write-char #\' out)
+                   for char across value
+                   do (progn (when (eq #\' char)
+                               (write-char char out))
+                             (write-char char out))
+                   finally (write-char #\' out))))))
 
 (defmethod xfiltertree:translate ((id eqvalg:column))
   (format nil "~A.~A" (eqvalg:column-table id) (eqvalg:column-name id)))
