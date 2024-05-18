@@ -29,6 +29,7 @@
    #:conjunction-p
    #:copy-conjunction
    #:conjunction-operands
+   #:conjunction-singleton-p
    ;; CONSTRUCTORS
    #:column-of
    #:equality-of
@@ -68,6 +69,10 @@
 (defun conjunction-of (&rest operands)
   (conjunction-from operands))
 
+(defun conjunction-singleton-p (conj)
+  (destructuring-bind (head . tail) (conjunction-operands conj)
+    (and (not tail) head)))
+
 (defgeneric coalesce (left right))
 
 (defgeneric subject (term))
@@ -95,11 +100,9 @@
     (multiple-value-bind (right-subject right-target) (subject right)
       (if (equalp left-subject right-subject)
           (if (equalp left-target right-target)
-              (cond
-                ((eq (equality-strict left) (equality-strict right)) left)
-                ((and (not (equality-strict left)) (not (equality-strict right)))
-                 (membership-of left-subject (list left-target right-target)))
-                (t (conjunction-of left right)))
+              (if (eq (equality-strict left) (equality-strict right))
+                  left
+                  (conjunction-of left right))
               (if (and (not (equality-strict left)) (not (equality-strict right)))
                   (membership-of left-subject (list left-target right-target))
                   (conjunction-of left right)))
@@ -135,8 +138,7 @@
         (conjunction-of left right))))
 
 (defmethod coalesce ((left conjunction) (right equality))
-  (if (and (not (cdr (conjunction-operands left)))
-           (car (conjunction-operands left)))
+  (if (conjunction-singleton-p left)
       (coalesce (car (conjunction-operands left)) right)
       (conjunction-from
        (loop for term in (conjunction-operands left)
