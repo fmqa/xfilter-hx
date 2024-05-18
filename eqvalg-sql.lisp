@@ -16,14 +16,17 @@
           do (progn (when (eq #\' char) (write-char char out))
                     (write-char char out)))))
 
+(defun join-table-for (left right)
+  (cdr (or (assoc (cons left right) *join* :test #'equal)
+           (assoc (cons right left) *join* :test #'equal))))
+
 (defun join-tables (tables)
   (loop with joiners = nil
         for left = (car tables) then (car rest)
         for rest = (cdr tables) then (cdr rest)
         while rest
         do (loop for right in rest
-                 for join = (cdr (or (assoc (cons left right) *join* :test #'equal)
-                                     (assoc (cons right left) *join* :test #'equal)))
+                 for join = (join-table-for left right)
                  do (when join (push join joiners)))
         finally (return joiners)))
 
