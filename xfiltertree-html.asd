@@ -1,9 +1,8 @@
 (asdf:defsystem xfiltertree-html
   :serial t
-  :depends-on ("uiop" "cl-who" "xfiltertree" "webstr" "fql")
+  :depends-on ("uiop" "cl-who" "xfiltertree" "webstr")
   :components ((:file "xfiltertree-html-package")
-               (:file "xfiltertree-html")
-               (:file "xfiltertree-html-forms"))
+               (:file "xfiltertree-html"))
   :in-order-to ((test-op (test-op :xfiltertree-html/test))))
 
 (asdf:defsystem xfiltertree-html/test
