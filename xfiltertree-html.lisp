@@ -120,7 +120,7 @@
          (data (format nil "data--search-~A" escaped))
          (form (format nil "form--~A" escaped)))
     (push (cl-who:with-html-output-to-string (s)
-            (:form :id form :hx-post (xfiltertree:dynamic-search-uri node)
+            (:form :id form :hx-post (xfiltertree:dynamic-searcher node)
                    :onsubmit "return false;"
                    :hx-target "next"
                    :hx-trigger (format nil "input changed from:#~A, ~
@@ -132,7 +132,7 @@
     (cl-who:with-html-output-to-string (s)
       (:div
        (:input :id id :name "q" :form form :type "search" :list data :|hx-on:change| "event.stopPropagation();")
-       (:button :hx-post (xfiltertree:dynamic-query-uri node)
+       (:button :hx-post (xfiltertree:dynamic-querier node)
                 :hx-include "previous input"
                 :hx-swap "afterend"
                 "+")

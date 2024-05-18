@@ -11,11 +11,11 @@
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
 (defun respond-with-filter-tree (clauses update)
-  (let* ((hier-clauses (xfiltertree-html:sort-filter-clauses clauses))
-         (tree (xfiltertree-sql:query-aggregation-tree hier-clauses)))
-    (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
-          (xfiltertree-html:*form-update* update))
-      (xfiltertree-html:htmlize tree))))
+  (let ((tree (xfiltertree-sql:compute-aggregations #'xfiltertree-bom:make-tree
+                                                    (mapcar #'car clauses)))
+        (xfiltertree-html:*form-post* (hunchentoot:request-uri*))
+        (xfiltertree-html:*form-update* update))
+    (xfiltertree-html:htmlize tree)))
 
 (defun allow-methods (allowed-methods handler &optional ondisallowed)
   (if (member (hunchentoot:request-method*) allowed-methods)
@@ -24,13 +24,9 @@
         (setf (hunchentoot:return-code*) hunchentoot:+HTTP-METHOD-NOT-ALLOWED+)
         (and ondisallowed (funcall ondisallowed)))))
 
-(defun parse-mode (string)
-  (if (equal "ALL" string)
-      :all))
-
 (defun parse-filter-bin-clause (clause)
   (destructuring-bind (filter &rest options) (fql:parse-filter-with-options clause)
-    (cons (parse-mode (cdr (assoc "bin" options :test #'equal))) filter)))
+    (cons filter (cdr (assoc "bin" options :test #'equal)))))
 
 (hunchentoot:define-easy-handler (fnt-route :uri "/fnt")
     ((clause :parameter-type 'list)

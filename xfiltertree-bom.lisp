@@ -1,54 +1,37 @@
 (defpackage xfiltertree-bom
   (:use :cl)
   (:export
-   #:event-type
-   #:phone-call-connection-status
-   #:consume-event-type
-   #:consume-phone-call-connection-status
-   #:consume-aggregation-tree))
+   #:make-event-type-node
+   #:make-connection-status-node
+   #:make-endpoint-node
+   #:make-tree))
 (in-package :xfiltertree-bom)
 
-(defun event-type (phonecalls emails)
+(defun make-event-type-node ()
   (make-instance
    'xfiltertree:aggregation
    :name "event.type"
-   :bins `(("event.type=PHONE_CALL" . (("ALL" . ,phonecalls)))
-           ("event.type=E_MAIL" . (("ALL" . ,emails))))))
+   :bins (list (list "event.type=PHONE_CALL" (list "ALL"))
+               (list "event.type=E_MAIL" (list "ALL")))))
 
-(defun phone-call-connection-status (accepted rejected)
+(defun make-connection-status-node ()
   (make-instance
    'xfiltertree:aggregation
    :name "event[type=PHONE_CALL].connectionStatus"
-   :bins `(("event[type=PHONE_CALL].connectionStatus=ACCEPTED" . (("ALL" . ,accepted)))
-           ("event[type=PHONE_CALL].connectionStatus=REJECTED" . (("ALL" . ,rejected))))))
+   :bins (list (list "event[type=PHONE_CALL].connectionStatus=ACCEPTED" (list "ALL"))
+               (list "event[type=PHONE_CALL].connectionStatus=REJECTED" (list "ALL")))))
 
-(defun consume-event-type (consume)
-  "Make an event type aggregation from calls to the given function CONSUME.
-   The values from each CONSUME call fill the aggregation bins in the following order:
-   - PHONE_CALL
-   - E_MAIL"
-  (event-type (funcall consume) (funcall consume)))
+(defun make-endpoint-node ()
+  (make-instance
+   'xfiltertree:dynamic
+   :name "endpoint.uri"
+   :searcher "/endpoints/search"
+   :querier "/endpoints/query"))
 
-(defun consume-phone-call-connection-status (consume)
-  "Make an connection status aggregation from calls to the given function CONSUME.
-   The values from each CONSUME call fill the aggregation bins in the following order:
-   - ACCEPTED
-   - REJECTED"
-  (phone-call-connection-status (funcall consume) (funcall consume)))
-
-(defun consume-aggregation-tree (consume &optional dynamic)
-  "Make an aggregation tree from calls to the given function CONSUME.
-   The values from each CONSUME call fill the aggregation bins in the following order:
-   - type=PHONE_CALL
-   - type=E_MAIL
-   - connectionStatus=ACCEPTED
-   - connectionStatus=REJECTED"
+(defun make-tree ()
   (make-instance
    'xfiltertree:node
-   :name "Basic"
-   :items (list (consume-event-type consume)
-                (consume-phone-call-connection-status consume)
-                (make-instance 'xfiltertree:dynamic :name "endpoint.uri"
-                                                    :search-uri "/endpoints/search"
-                                                    :query-uri "/endpoints/query"
-                                                    :bins (and dynamic (funcall dynamic "endpoint.uri"))))))
+   :name "basic"
+   :children (list (make-event-type-node)
+                   (make-connection-status-node)
+                   (make-endpoint-node))))

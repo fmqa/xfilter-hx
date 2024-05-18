@@ -53,11 +53,12 @@
 
 (defrule column (and word (? (and #\[ clause #\])) #\. word)
   (:destructure (table clause dot name)
-    (cons (format nil "~A~A~A" table dot name)
+    (declare (ignore dot))
+    (cons (cons table name)
           (when clause
             (destructuring-bind (open (op left right) close) clause
               (declare (ignore open close))
-              (list op (format nil "~A.~A" table left) right))))))
+              (list op (cons table left) right))))))
 
 (defrule filter (and column #\= constant)
   (:destructure (left op right)

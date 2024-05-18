@@ -2,9 +2,9 @@
   (:use :cl)
   (:export #:node #:node-name #:node-children
            #:aggregation #:aggregation-bins
-           #:dynamic
-           #:dynamic-search-uri
-           #:dynamic-query-uri))
+           #:dynamic #:dynamic-searcher #:dynamic-querier
+           #:dynamicp
+           #:traverse #:traverse-if))
 (in-package :xfiltertree)
 
 (defclass node ()
@@ -12,20 +12,31 @@
     :reader node-name
     :initarg :name)
    (children
-    :reader node-children
-    :initarg :items
+    :accessor node-children
+    :initarg :children
     :initform nil)))
 
 (defclass aggregation (node)
   ((bins
-    :reader aggregation-bins
+    :accessor aggregation-bins
     :initarg :bins
     :initform nil)))
 
 (defclass dynamic (aggregation)
-  ((search-uri
-    :reader dynamic-search-uri
-    :initarg :search-uri)
-   (query-uri
-    :reader dynamic-query-uri
-    :initarg :query-uri)))
+  ((searcher
+    :reader dynamic-searcher
+    :initarg :searcher)
+   (querier
+    :reader dynamic-querier
+    :initarg :querier)))
+
+(defun dynamicp (obj)
+  (typep obj 'dynamic))
+
+(defun traverse (func node)
+  (funcall func node)
+  (dolist (child (node-children node)) (traverse func child)))
+
+(defun traverse-if (pred func node)
+  (traverse (lambda (nd) (when (funcall pred nd) (funcall func nd)))
+            node))
