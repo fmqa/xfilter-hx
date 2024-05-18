@@ -89,10 +89,39 @@
                   (:label :id (format nil "label--~A" escaped)
                           :for escaped
                           (:span :data-bin "ALL" (cl-who:str "0")))
-                  (:button :type "button" :|hx-on:click| (cl-who:escape-string "((elt, id) => { if (!elt) return; const attrs = elt.getAttribute('hx-select-oob'); if (!attrs) return; elt.setAttribute('hx-select-oob', attrs.split(',').filter(attr => attr !== id).join(',')); this.parentElement.remove(); })(htmx.closest(this, '[hx-select-oob]'), '#' + this.parentElement.id)") "x")
+                  (:button
+				   :type "button"
+				   ;; Remove this fieldset in addition to any OOB settings
+				   ;; related to this element.
+				   :|hx-on:click|
+				   (cl-who:escape-string
+					(format
+					 nil
+					 "((elt, id) => {~
+                        if (!elt) return;~
+                        const attrs = elt.getAttribute('hx-select-oob');~
+                        if (!attrs) return;~
+                        elt.setAttribute(~
+                          'hx-select-oob',~
+                          attrs.split(',').filter(attr => attr !== id).join(','));~
+                          htmx.remove('#fieldset--~A');~
+                      })(htmx.closest(this, '[hx-select-oob]'),~
+                         '#fieldset--~A')" escaped escaped))
+				   "x")
+				  ;; Enable OOB swapping for this element to avoid adding duplicates.
                   (:script
                    (cl-who:str
-                    (format nil "((selector) => { const elt = htmx.find(selector); if (!elt || !elt.parentElement) return; const attr = elt.parentElement.getAttribute('hx-select-oob'); (attr && attr.split(',').includes(selector)) || elt.parentElement.setAttribute('hx-select-oob', attr ? attr + ',' + selector : selector); })('#fieldset--~A')" escaped))))))))))))
+                    (format
+					 nil
+					 "((selector) => {~
+                        const elt = htmx.find(selector);~
+                        if (!elt || !elt.parentElement) return;~
+                        const attr = elt.parentElement.getAttribute('hx-select-oob');~
+                        (attr && attr.split(',').includes(selector)) ||~
+                          elt.parentElement.setAttribute(~
+                            'hx-select-oob',~
+                            attr ? attr + ',' + selector : selector);~
+                      })('#fieldset--~A')" escaped))))))))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))
