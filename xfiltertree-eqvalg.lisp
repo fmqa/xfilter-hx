@@ -1,9 +1,9 @@
-(defpackage xfiltertree-fql
+(defpackage xfiltertree-eqvalg
   (:use :cl)
   (:export
    #:constrain
    #:extend))
-(in-package :xfiltertree-fql)
+(in-package :xfiltertree-eqvalg)
 
 (defun quote-value (value)
   (cond ((numberp value) value)

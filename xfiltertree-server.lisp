@@ -19,11 +19,11 @@
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
 (defun respond-with-filter-tree (clauses update &optional dynamic)
-  (let ((tree (xfiltertree-fql:extend (xfiltertree-bom:make-tree) dynamic)))
+  (let ((tree (xfiltertree-eqvalg:extend (xfiltertree-bom:make-tree) dynamic)))
     (let ((eqvalg-sql:*join* *default-join*))
       (xfiltertree-sql:compute-aggregations
-       (xfiltertree-fql:constrain (xfiltertree:copy-node tree)
-                                  (mapcar #'car clauses))))
+       (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
+                                     (mapcar #'car clauses))))
     (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
           (xfiltertree-html:*form-update* update))
       (xfiltertree-html:htmlize tree))))
@@ -76,8 +76,8 @@
                 (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))
            (let ((eqvalg-sql:*join* *default-join*))
              (xfiltertree-sql:compute-aggregations
-              (xfiltertree-fql:constrain (xfiltertree:copy-node tree)
-                                         (mapcar #'car clauses))))
+              (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
+                                           (mapcar #'car clauses))))
            (xfiltertree-html:htmlize-dynamic-bins tree)))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
