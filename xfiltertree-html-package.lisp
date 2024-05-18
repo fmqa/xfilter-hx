@@ -4,6 +4,4 @@
    #:htmlize
    #:*form-post*
    #:*form-update*
-   #:unescape-filter-clauses
-   #:parse-filter-clauses
    #:sort-filter-clauses))

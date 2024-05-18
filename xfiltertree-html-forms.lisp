@@ -1,13 +1,5 @@
 (in-package :xfiltertree-html)
 
-(defun parse-mode (string)
-  (if (equal "ALL" string)
-      :all))
-
-(defun parse-filter-clauses (clauses)
-  (loop for (clause . mode) in clauses
-        collect (cons (parse-mode mode) (fql:parse-filter clause))))
-
 (defun sort-filter-clauses (clauses)
   "Sort filter clauses into a tree of the form
   ((attribute (mode (op args...) ...) ...) ...)"

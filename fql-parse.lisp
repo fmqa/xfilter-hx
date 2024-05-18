@@ -2,7 +2,8 @@
   (:use :cl :esrap)
   (:export
    #:parse-filter
-   #:parse-column))
+   #:parse-column
+   #:parse-filter-with-options))
 (in-package :fql)
 
 ;; Parses simple filter strings of the form
@@ -37,12 +38,15 @@
 (defrule word (and (or #\_ (alpha-char-p character)) (* (or #\_ (alphanumericp character))))
   (:text t))
 
-(defrule text (+ character)
+(defrule single-quoted-string (and #\' (* (not #\')) #\')
+  (:destructure (open text close)
+    (declare (ignore open close))
+    text)
   (:text t))
 
-(defrule constant (or number word))
+(defrule constant (or number word single-quoted-string))
 
-(defrule clause (and word #\= (or number word))
+(defrule clause (and word #\= constant)
   (:destructure (left equality right)
     (declare (ignore equality))
     (list :strict-eq left right)))
@@ -61,6 +65,22 @@
     (destructuring-bind (column &rest subclause) left
       (cons (list :eq column right)
             (when subclause (list subclause))))))
+
+(defrule option (and word #\= constant)
+  (:destructure (left eqls right)
+    (declare (ignore eqls))
+    (cons left right)))
+
+(defrule option-list (and option (* (and  #\, option)))
+  (:destructure (head tail)
+    (cons head (mapcar #'cadr tail))))
+
+(defrule filter-with-options (and filter (? (and #\; option-list)))
+  (:destructure (flt options)
+    (cons flt (cadr options))))
+
+(defun parse-filter-with-options (text)
+  (parse 'filter-with-options text))
 
 (defun parse-filter (text)
   (parse 'filter text))

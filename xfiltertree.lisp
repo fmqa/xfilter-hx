@@ -22,7 +22,7 @@
     :initarg :bins
     :initform nil)))
 
-(defclass dynamic (node)
+(defclass dynamic (aggregation)
   ((search-uri
     :reader dynamic-search-uri
     :initarg :search-uri)

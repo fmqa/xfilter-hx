@@ -36,7 +36,7 @@
    - REJECTED"
   (phone-call-connection-status (funcall consume) (funcall consume)))
 
-(defun consume-aggregation-tree (consume)
+(defun consume-aggregation-tree (consume &optional dynamic)
   "Make an aggregation tree from calls to the given function CONSUME.
    The values from each CONSUME call fill the aggregation bins in the following order:
    - type=PHONE_CALL
@@ -50,4 +50,5 @@
                 (consume-phone-call-connection-status consume)
                 (make-instance 'xfiltertree:dynamic :name "endpoint.uri"
                                                     :search-uri "/endpoints/search"
-                                                    :query-uri "/endpoints/query"))))
+                                                    :query-uri "/endpoints/query"
+                                                    :bins (and dynamic (funcall dynamic "endpoint.uri"))))))

@@ -10,32 +10,11 @@
 (defparameter *static-dispatcher*
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
-(defun make-directives (haystack)
-  (lambda (needle)
-    (member (if (symbolp needle) (symbol-name needle) (string-upcase needle))
-            haystack
-            :test #'equal)))
-
-(defun collect-form-parameters (parameters)
-  (loop for pair in parameters
-        for key = (car pair)
-        for value = (cdr pair)
-        for discriminator = (char key 0)
-        if (eq #\$ discriminator)
-          do (setf value (string-downcase value)) and
-          when (member value '("true" "t" "1" "on") :test #'equal)
-            collect (string-upcase (subseq key 1)) into directives
-          end
-        else
-          collect pair into clauses
-        finally (return (values clauses (make-directives directives)))))
-
-(defun respond-with-filter-tree (clauses directives)
-  (let* ((parsed-clauses (xfiltertree-html:parse-filter-clauses clauses))
-         (hier-clauses (xfiltertree-html:sort-filter-clauses parsed-clauses))
+(defun respond-with-filter-tree (clauses update)
+  (let* ((hier-clauses (xfiltertree-html:sort-filter-clauses clauses))
          (tree (xfiltertree-sql:query-aggregation-tree hier-clauses)))
     (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
-          (xfiltertree-html:*form-update* (funcall directives :update)))
+          (xfiltertree-html:*form-update* update))
       (xfiltertree-html:htmlize tree))))
 
 (defun allow-methods (allowed-methods handler &optional ondisallowed)
@@ -45,12 +24,22 @@
         (setf (hunchentoot:return-code*) hunchentoot:+HTTP-METHOD-NOT-ALLOWED+)
         (and ondisallowed (funcall ondisallowed)))))
 
-(hunchentoot:define-easy-handler (fnt-route :uri "/fnt") ()
+(defun parse-mode (string)
+  (if (equal "ALL" string)
+      :all))
+
+(defun parse-filter-bin-clause (clause)
+  (destructuring-bind (filter &rest options) (fql:parse-filter-with-options clause)
+    (cons (parse-mode (cdr (assoc "bin" options :test #'equal))) filter)))
+
+(hunchentoot:define-easy-handler (fnt-route :uri "/fnt")
+    ((clause :parameter-type 'list)
+     (update :parameter-type 'boolean))
   (allow-methods
    '(:HEAD :GET :POST)
    (lambda ()
-     (multiple-value-call #'respond-with-filter-tree
-       (collect-form-parameters (hunchentoot:post-parameters*))))))
+     (respond-with-filter-tree (mapcar #'parse-filter-bin-clause clause)
+                               update))))
 
 (hunchentoot:define-easy-handler (endpoint-search-route :uri "/endpoints/search") (q)
   (allow-methods
@@ -73,55 +62,8 @@
        (if endpoint
            (destructuring-bind (id uri) endpoint
              (declare (ignore id))
-             (let* ((name (format nil "endpoint.uri=~A" uri))
-                    (escaped (webstr:escape name)))
-               (cl-who:with-html-output-to-string (s)
-                 (:fieldset
-                  :id (format nil "fieldset--~A" escaped)
-                  :data-leaf "true"
-                  (:legend (cl-who:str name))
-                  (:input :type "hidden" :name (cl-who:escape-string (format nil "@~A" name))
-                          :value "add")
-                  (:input :id escaped
-                          :type "checkbox"
-                          :name name
-                          :value "ALL")
-                  (:label :id (format nil "label--~A" escaped)
-                          :for escaped
-                          (:span :data-bin "ALL" (cl-who:str "0")))
-                  (:button
-				   :type "button"
-				   ;; Remove this fieldset in addition to any OOB settings
-				   ;; related to this element.
-				   :|hx-on:click|
-				   (cl-who:escape-string
-					(format
-					 nil
-					 "((elt, id) => {~
-                        if (!elt) return;~
-                        const attrs = elt.getAttribute('hx-select-oob');~
-                        if (!attrs) return;~
-                        elt.setAttribute(~
-                          'hx-select-oob',~
-                          attrs.split(',').filter(attr => attr !== id).join(','));~
-                          htmx.remove('#fieldset--~A');~
-                      })(htmx.closest(this, '[hx-select-oob]'),~
-                         '#fieldset--~A')" escaped escaped))
-				   "x")
-				  ;; Enable OOB swapping for this element to avoid adding duplicates.
-                  (:script
-                   (cl-who:str
-                    (format
-					 nil
-					 "((selector) => {~
-                        const elt = htmx.find(selector);~
-                        if (!elt || !elt.parentElement) return;~
-                        const attr = elt.parentElement.getAttribute('hx-select-oob');~
-                        (attr && attr.split(',').includes(selector)) ||~
-                          elt.parentElement.setAttribute(~
-                            'hx-select-oob',~
-                            attr ? attr + ',' + selector : selector);~
-                      })('#fieldset--~A')" escaped))))))))))))
+             (let ((name (format nil "endpoint.uri='~A'" uri)))
+               (xfiltertree-html::htmlize-dynamic-bin name '(("ALL" . 0))))))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))

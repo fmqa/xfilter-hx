@@ -40,7 +40,7 @@
       "1=1"))
 
 (defun sqlize-aggregations (clauses)
-  (format nil "WITH t AS (SELECT * FROM event WHERE ~A), u AS (SELECT * FROM event WHERE ~A) ~A"
+  (format nil "WITH t AS (SELECT event.*, endpoint.* FROM event, endpoint, egression WHERE egression.egressor = endpoint.id AND egression.egressed = event.id AND (~A)), u AS (SELECT event.*, endpoint.* FROM event, endpoint, egression WHERE egression.egressor = endpoint.id AND egression.egressed = event.id AND (~A)) ~A"
           (sqlize-sorted-clauses (remove "event.type" clauses :key #'car :test #'equal))
           (sqlize-sorted-clauses (remove "event.connectionStatus" clauses :key #'car :test #'equal))
           *aggregations*))

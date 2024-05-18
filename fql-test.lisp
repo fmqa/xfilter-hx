@@ -17,6 +17,8 @@
              (fql:parse-filter "table.column=-2")))
   (is (equal '((:eq "table.column" -2.5))
              (fql:parse-filter "table.column=-2.5")))
+  (is (equal '((:eq "table.column" "x:y"))
+             (fql:parse-filter "table.column='x:y'")))
   (is (equal '((:eq "table.column" 46) (:strict-eq "table.var" "x"))
              (fql:parse-filter "table[var=x].column=46")))
   (is (equal '((:eq "table.column" 46) (:strict-eq "table.var" 11))
@@ -27,3 +29,9 @@
              (fql:parse-filter "table[var=-17].column=46")))
   (is (equal '((:eq "table.column" 46) (:strict-eq "table.var" -17.3))
              (fql:parse-filter "table[var=-17.3].column=46"))))
+
+(test options
+  (is (equal '(((:eq "table.column" 1)))
+             (fql:parse-filter-with-options "table.column=1")))
+  (is (equal '(((:eq "table.column" 12)) ("bin" . "ALL"))
+             (fql:parse-filter-with-options "table.column=12;bin=ALL"))))
