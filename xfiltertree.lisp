@@ -3,8 +3,7 @@
   (:export #:node #:node-name #:node-children
            #:aggregation #:aggregation-bins
            #:dynamic #:dynamic-searcher #:dynamic-querier
-           #:dynamicp
-           #:traverse #:traverse-if))
+           #:traverse))
 (in-package :xfiltertree)
 
 (defclass node ()
@@ -30,13 +29,6 @@
     :reader dynamic-querier
     :initarg :querier)))
 
-(defun dynamicp (obj)
-  (typep obj 'dynamic))
-
 (defun traverse (func node)
   (funcall func node)
   (dolist (child (node-children node)) (traverse func child)))
-
-(defun traverse-if (pred func node)
-  (traverse (lambda (nd) (when (funcall pred nd) (funcall func nd)))
-            node))
