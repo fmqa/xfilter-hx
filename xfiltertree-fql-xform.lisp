@@ -40,29 +40,38 @@
     (when found
       (funcall func found table))))
 
+(defun eqinp (obj)
+  (or (eq :EQ obj)
+      (eq :IN obj)))
+
 (defun combine-eq-in (constraints expression)
   (call-with-table
-   (lambda (op) (or (eq :EQ op) (eq :IN op)))
+   #'eqinp
    (lambda (constraint table)
-     (setf (car constraint) :IN
-           (cdr constraint) (cons table
-                                  (delete-duplicates
-                                   (append (remove table (cdr constraint) :test #'equal)
-                                           (remove table (cdr expression) :test #'equal))))))
+     (setf
+      ;; Set CAR to :IN
+      (car constraint)
+      :IN
+      ;; Set CDR to all union of all non-table operands in the
+      ;; constraint and the expression to be combined with it
+      (cdr constraint)
+      (cons table
+            (delete-duplicates
+             (append (remove table (cdr constraint) :test #'equal)
+                     (remove table (cdr expression) :test #'equal))))))
    constraints
    (fql-util:expr-first-table expression)))
 
 (defun combine-expression (constraints expression)
-  (unless (and (member (car expression) '(:EQ :IN)) (combine-eq-in constraints expression))
+  (unless (and (eqinp (car expression)) (combine-eq-in constraints expression))
     (push expression constraints))
   constraints)
 
 (defun combine-constraints (constraints additional)
   (loop for additional-expression in additional
-        do (unless (member additional-expression constraints :test #'equal)
-             (setf constraints
+        unless (member additional-expression constraints :test #'equal)
+          do (setf constraints
                    (combine-expression constraints additional-expression))
-             constraints)
         finally (return constraints)))
 
 (defun constrain-tree-queries (tree constraint-groups)
