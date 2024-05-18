@@ -11,7 +11,7 @@
 (defun make-event-type-node ()
   (make-instance
    'xfiltertree:aggregation
-   :name (eqvalg:column-of "event" "type")
+   :id (eqvalg:column-of "event" "type")
    :bins (list (list (eqvalg:equality-of (eqvalg:column-of "event" "type") "PHONE_CALL")
                      (list "ALL"))
                (list (eqvalg:equality-of (eqvalg:column-of "event" "type") "E_MAIL")
@@ -20,8 +20,8 @@
 (defun make-connection-status-node ()
   (make-instance
    'xfiltertree:aggregation
-   :name (cons (eqvalg:column-of "event" "connectionStatus")
-               (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
+   :id (cons (eqvalg:column-of "event" "connectionStatus")
+             (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
    :bins (list (list (eqvalg:conjunction-of
                       (eqvalg:equality-of (eqvalg:column-of "event" "connectionStatus")
                                           "ACCEPTED")
@@ -36,7 +36,7 @@
 (defun make-endpoint-node (&optional bins)
   (make-instance
    'xfiltertree:dynamic
-   :name (eqvalg:column-of "endpoint" "uri")
+   :id (eqvalg:column-of "endpoint" "uri")
    :searcher "/endpoints/search"
    :querier "/endpoints/query"
    :bins bins))
@@ -47,7 +47,7 @@
 (defun make-tree ()
   (make-instance
    'xfiltertree:node
-   :name "basic"
+   :id "basic"
    :children (list (make-event-type-node)
                    (make-connection-status-node)
                    (make-endpoint-node))))

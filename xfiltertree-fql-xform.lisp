@@ -73,9 +73,9 @@
 
 (defun constrained-tree (tree constraints)
   (loop for (node . unconstrained) in (collect-node-queries tree)
-        for column = (if (eqvalg:column-p (xfiltertree:node-name node))
-                         (xfiltertree:node-name node)
-                         (car (xfiltertree:node-name node)))
+        for column = (if (eqvalg:column-p (xfiltertree:node-id node))
+                         (xfiltertree:node-id node)
+                         (car (xfiltertree:node-id node)))
         for applicable = (remove-if (lambda (cst) (relatedp column cst)) constraints)
         for constrained = (loop for (expression . aggregations) in unconstrained
                                 collect (cons (reduce #'eqvalg:coalesce

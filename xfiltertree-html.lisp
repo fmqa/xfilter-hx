@@ -25,9 +25,9 @@
 (defun htmlize-level (node &optional (level 0))
   (cl-who:with-html-output-to-string (s)
     (:fieldset
-     :data-name (xfiltertree:node-readable-name node)
+     :data-name (xfiltertree:node-name node)
      (:legend :data-i18n ""
-              (cl-who:str (xfiltertree:node-readable-name node)))
+              (cl-who:str (xfiltertree:node-name node)))
      (cl-who:str (htmlize-content node))
      (cl-who:str
       (uiop:reduce/strcat
@@ -51,19 +51,19 @@
     (destructuring-bind (cluster &rest count) pair
       (htmlize-aggregation-triplet name cluster count))))
 
-(defun htmlize-aggregation-bin (bin)
-  (destructuring-bind (name &rest value) bin
-    (cl-who:with-html-output-to-string (s)
-      (:fieldset :data-leaf "true"
-       (:legend :data-i18n "" (cl-who:str name))
-       (cl-who:str
-        (uiop:reduce/strcat
-         (mapcar (make-aggregation-bin-htmlizer name)
-                 value)))))))
+(defun htmlize-aggregation-bin (name value)
+  (cl-who:with-html-output-to-string (s)
+    (:fieldset
+     :data-leaf "true"
+     (:legend :data-i18n "" (cl-who:str name))
+     (cl-who:str
+      (uiop:reduce/strcat
+       (mapcar (make-aggregation-bin-htmlizer name)
+               value))))))
 
 (defmethod htmlize-content ((node xfiltertree:aggregation))
   (uiop:reduce/strcat
-   (mapcar #'htmlize-aggregation-bin (xfiltertree:aggregation-readable-bins node))))
+   (xfiltertree:aggregation-map #'htmlize-aggregation-bin node)))
 
 (defun htmlize-dynamic-bin (name bins)
   (let* ((clause (format nil "~A;bin=ALL" name))
@@ -113,16 +113,12 @@
                                 attr ? attr + ',' + selector : selector);~
                           })('#fieldset--~A')" escaped)))))))
 
-(defun htmlize-dynamic-bins (bins)
+(defun htmlize-dynamic-bins (aggregation)
   (uiop:reduce/strcat
-   (mapcar
-    (lambda (pair)
-      (destructuring-bind (clause &rest bins) pair
-        (htmlize-dynamic-bin (xfiltertree:translate clause) bins)))
-    bins)))
+   (xfiltertree:aggregation-map #'htmlize-dynamic-bin aggregation)))
 
 (defmethod htmlize-content ((node xfiltertree:dynamic))
-  (let* ((name (xfiltertree:node-readable-name node))
+  (let* ((name (xfiltertree:node-name node))
          (escaped (webstr:escape name))
          (id (format nil "search--~A" escaped))
          (data (format nil "data--search-~A" escaped))
@@ -144,5 +140,4 @@
                 :hx-include "previous input"
                 :hx-swap "afterend"
                 "+")
-       (cl-who:str
-        (htmlize-dynamic-bins (xfiltertree:aggregation-bins node)))))))
+       (cl-who:str (htmlize-dynamic-bins node))))))

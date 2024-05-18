@@ -19,20 +19,19 @@
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
 (defun enrich-clauses (tree dynamic)
-  (xfiltertree:traverse
+  (xfiltertree:traverse-if
+   #'xfiltertree:dynamic-p
    (lambda (node)
-     (when (typep node 'xfiltertree:dynamic)
-       (loop for (clause . bin) in dynamic
-             for clause-subject = (eqvalg:subject clause)
-             for node-subject = (xfiltertree:node-name node)
-             do (progn
-                  (when (consp node-subject)
-                    (setf node-subject (car node-subject)))
-                  (when (consp clause-subject)
-                    (setf clause-subject (car (last clause-subject))))
-                  (when (equalp node-subject clause-subject)
-                    (push (list clause (list bin))
-                          (xfiltertree:aggregation-bins node)))))))
+     (loop for (clause . bins) in dynamic
+           for clause-subject = (eqvalg:subject clause)
+           for node-subject = (xfiltertree:node-id node)
+           do (progn (when (consp node-subject)
+                       (setf node-subject (car node-subject)))
+                     (when (consp clause-subject)
+                       (setf clause-subject (car (last clause-subject))))
+                     (when (equalp node-subject clause-subject)
+                       (push (cons clause (mapcar #'list bins))
+                             (xfiltertree:aggregation-bins node))))))
    tree)
   tree)
 
@@ -54,7 +53,7 @@
 
 (defun parse-filter-bin-clause (clause)
   (destructuring-bind (filter &rest options) (fql:parse-filter-with-options clause)
-    (cons filter (cdr (assoc "bin" options :test #'equal)))))
+    (cons filter (list (cdr (assoc "bin" options :test #'equal))))))
 
 (hunchentoot:define-easy-handler (fnt-route :uri "/fnt")
     ((clause :parameter-type 'list)
@@ -96,7 +95,7 @@
                           name
                           '("ALL"))
                          (mapcar #'car clauses)))))
-           (xfiltertree-html:htmlize-dynamic-bins (xfiltertree:aggregation-bins tree))))))))
+           (xfiltertree-html:htmlize-dynamic-bins tree)))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))
