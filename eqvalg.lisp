@@ -86,9 +86,8 @@
   (loop with cols = nil
         for operand in (conjunction-operands term)
         for col = (subject operand)
-        do (if (column-p col)
-               (push col cols)
-               (setf cols (append cols col)))
+        do (when (and (column-p col) (not (member col cols :test #'equalp)))
+             (push col cols))
         finally (return cols)))
 
 (defmethod coalesce ((left equality) (right equality))
@@ -97,12 +96,10 @@
       (if (equalp left-subject right-subject)
           (if (equalp left-target right-target)
               (cond
-                ((and (equality-strict left) (equality-strict right))
-                 (conjunction-of left right))
+                ((eq (equality-strict left) (equality-strict right)) left)
                 ((and (not (equality-strict left)) (not (equality-strict right)))
                  (membership-of left-subject (list left-target right-target)))
-                ((equality-strict left) left)
-                (t right))
+                (t (conjunction-of left right)))
               (if (and (not (equality-strict left)) (not (equality-strict right)))
                   (membership-of left-subject (list left-target right-target))
                   (conjunction-of left right)))
