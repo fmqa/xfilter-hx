@@ -160,9 +160,8 @@
   (coalesce left right))
 
 (defmethod coalesce ((left conjunction) (right conjunction))
-  (reduce #'coalesce
-          (conjunction-operands
-           (conjunction-from
-            (remove-duplicates (append (conjunction-operands left)
-                                       (conjunction-operands right))
-                               :test #'equalp)))))
+  (reduce
+   #'coalesce
+   (remove-duplicates (append (conjunction-operands left)
+                              (conjunction-operands right))
+                      :test #'equalp)))
