@@ -21,7 +21,6 @@ Run the following command:
 
 ```sh
 sbcl --disable-debugger \
-     --eval '(require :asdf)' \
      --eval '(pushnew (uiop:getcwd) asdf:*central-registry*)' \
      --eval '(asdf:load-system :xfiltertree-server)' \
      --eval '(hunchentoot:start xfiltertree-server:*acceptor*)' \
