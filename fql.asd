@@ -1,5 +1,5 @@
 (asdf:defsystem fql
-  :depends-on ("esrap")
+  :depends-on ("esrap" "eqvalg")
   :components ((:file "fql-parse"))
   :in-order-to ((test-op (test-op :fql/test))))
 

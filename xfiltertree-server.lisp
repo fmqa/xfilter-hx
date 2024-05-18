@@ -5,10 +5,12 @@
 (in-package :xfiltertree-server)
 
 (defparameter *default-join*
-  '((("event" . "endpoint")
-     ("egression")
-     (:EQ ("egression" . "egressor") ("endpoint" . "id"))
-     (:EQ ("egression" . "egressed") ("event" . "id")))))
+  (list (cons '("event" . "endpoint")
+              (eqvalg:conjunction-of
+               (eqvalg:equality-of (eqvalg:column-of "egression" "egressor")
+                                   (eqvalg:column-of "endpoint" "id"))
+               (eqvalg:equality-of (eqvalg:column-of "egression" "egressed")
+                                   (eqvalg:column-of "event" "id"))))))
 
 (defparameter *acceptor*
   (make-instance 'hunchentoot:easy-acceptor :address "127.0.0.1" :port 8080))
@@ -17,8 +19,8 @@
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
 (defun respond-with-filter-tree (clauses update &optional dynamic)
-  (let ((tree (let ((fql-sql:*join* *default-join*))
-                 (xfiltertree-sql:compute-aggregations #'xfiltertree-bom:make-tree
+  (let ((tree (let ((eqvalg-sql:*join* *default-join*))
+                 (xfiltertree-sql:compute-aggregations (xfiltertree-bom:make-tree)
                                                        (mapcar #'car clauses))))
         (xfiltertree-html:*form-post* (hunchentoot:request-uri*))
         (xfiltertree-html:*form-update* update))
@@ -42,7 +44,6 @@
   (allow-methods
    '(:HEAD :GET :POST)
    (lambda ()
-     (prin1 (mapcar #'parse-filter-bin-clause dynamic))
      (respond-with-filter-tree (mapcar #'parse-filter-bin-clause clause)
                                update dynamic))))
 
@@ -69,12 +70,11 @@
            (endpoint (xfiltertree-sql:endpoint-by-uri endpoint-uri)))
        (when endpoint
          (let* ((name (format nil "endpoint.uri='~A'" endpoint-uri))
-                (tree (let ((fql-sql:*join* *default-join*))
+                (tree (let ((eqvalg-sql:*join* *default-join*))
                         (xfiltertree-sql:compute-aggregations
-                         (lambda ()
-                           (xfiltertree-bom:make-singleton-endpoint-node
-                            name
-                            '("ALL")))
+                         (xfiltertree-bom:make-singleton-endpoint-node
+                          name
+                          '("ALL"))
                          (mapcar #'car clauses)))))
            (xfiltertree-html:htmlize-dynamic-bins (xfiltertree:aggregation-bins tree))))))))
 

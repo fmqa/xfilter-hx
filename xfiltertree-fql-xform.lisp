@@ -3,8 +3,7 @@
   (:export
    #:queries
    #:collect-node-queries
-   #:constrain-tree-queries
-   #:nodecolp))
+   #:constrained-tree))
 (in-package :xfiltertree-fql)
 
 (defgeneric queries (node))
@@ -28,66 +27,21 @@
      node)
     collection))
 
-(defun find-table (pred expressions table)
-  (find-if
-   (lambda (expr)
-     (and (funcall pred (car expr))
-          (equal table
-                 (fql-util:expr-first-table expr))))
-   expressions))
+(defun related-subjectp (column subject)
+  (if (listp subject)
+      (equalp column (car (last subject)))
+      (equalp column subject)))
 
-(defun call-with-table (pred func expressions table)
-  (let ((found (find-table pred expressions table)))
-    (when found
-      (funcall func found table))))
+(defun relatedp (column expression)
+  (related-subjectp column (eqvalg:subject expression)))
 
-(defun eqinp (obj)
-  (or (eq :EQ obj)
-      (eq :IN obj)))
-
-(defun combine-eq-in (constraints expression)
-  (call-with-table
-   #'eqinp
-   (lambda (constraint table)
-     (setf
-      ;; Set CAR to :IN
-      (car constraint)
-      :IN
-      ;; Set CDR to all union of all non-table operands in the
-      ;; constraint and the expression to be combined with it
-      (cdr constraint)
-      (cons table
-            (delete-duplicates
-             (append (remove table (cdr constraint) :test #'equal)
-                     (remove table (cdr expression) :test #'equal))))))
-   constraints
-   (fql-util:expr-first-table expression)))
-
-(defun combine-expression (constraints expression)
-  (unless (and (eqinp (car expression)) (combine-eq-in constraints expression))
-    (push expression constraints))
-  constraints)
-
-(defun combine-constraints (constraints additional)
-  (loop for additional-expression in additional
-        unless (member additional-expression constraints :test #'equal)
-          do (setf constraints
-                   (combine-expression constraints additional-expression))
-        finally (return constraints)))
-
-(defun nodecolp (node column)
-  (equal column
-         (car (fql:parse-column (xfiltertree:node-name node)))))
-
-(defun constrain-tree-queries (tree constraint-groups)
-  (loop with node-aggregation-groups = (collect-node-queries tree)
-        for conjunction-constraint in constraint-groups
-        for subject = (fql-util:group-first-table conjunction-constraint)
-        when subject do
-          (loop for (node . aggregation-groups) in node-aggregation-groups
-                unless (nodecolp node subject)
-                  do (loop for node-conjunctions-aggregations in aggregation-groups
-                           for node-conjunctions = (car node-conjunctions-aggregations)
-                           do (setf (car node-conjunctions-aggregations)
-                                    (combine-constraints node-conjunctions conjunction-constraint))))
-        finally (return node-aggregation-groups)))
+(defun constrained-tree (tree constraints)
+  (loop for (node . unconstrained) in (collect-node-queries tree)
+        for column = (car (fql:parse-column (xfiltertree:node-name node)))
+        for applicable = (remove-if (lambda (cst) (relatedp column cst)) constraints)
+        for constrained = (loop for (expression . aggregations) in unconstrained
+                                collect (cons (reduce #'eqvalg:coalesce
+                                                      applicable
+                                                      :initial-value expression)
+                                              aggregations))
+        collect (cons node constrained)))

@@ -13,21 +13,18 @@
   (sqlite:with-open-database (db *db*)
     (funcall f db)))
 
-(defun compute-aggregations (node-maker &optional constraints)
-  (let* ((node (funcall node-maker))
-         (node-aggregation-groups (xfiltertree-fql:constrain-tree-queries node constraints))
-         (aggregation-groups (mapcar #'cdr node-aggregation-groups))
-         (sql-setters
-           (fql-sql:sqlize-aggregated-conjoined-group-list
-            aggregation-groups))
-         (sql-stmts (mapcar #'car sql-setters))
-         (agg-setters (mapcar #'cdr sql-setters))
-         (sql-q (format nil "SELECT ~{(~A)~^, ~}" sql-stmts))
+(defun compute-aggregations (node &optional constraints)
+  (let* ((tree (xfiltertree-fql:constrained-tree node constraints))
+         (expression-aggregations (apply #'append (mapcar #'cdr tree)))
+         (expressions (mapcar #'car expression-aggregations))
+         (aggregations (mapcar #'cdr expression-aggregations))
+         (sql-stmts (mapcar #'eqvalg-sql:sqlize-aggregation expressions))
+         (sql-cmd (format nil "SELECT ~{(~A)~^, ~}" sql-stmts))
          (sql-row (multiple-value-list
-                   (call-with-db (lambda (db) (sqlite:execute-one-row-m-v db sql-q))))))
-    (princ sql-q)
-    (loop for (count . setter) in (mapcar #'cons sql-row agg-setters)
-          do (funcall setter count))
+                   (call-with-db (lambda (db) (sqlite:execute-one-row-m-v db sql-cmd))))))
+    (princ sql-cmd)
+    (loop for (count pair) in (mapcar #'cons sql-row aggregations)
+          do (setf (cdr pair) count))
     node))
 
 (defun wordp (char)

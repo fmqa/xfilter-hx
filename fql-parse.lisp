@@ -49,23 +49,25 @@
 (defrule clause (and word #\= constant)
   (:destructure (left equality right)
     (declare (ignore equality))
-    (list :strict-eq left right)))
+    (cons left right)))
 
 (defrule column (and word (? (and #\[ clause #\])) #\. word)
   (:destructure (table clause dot name)
     (declare (ignore dot))
-    (cons (cons table name)
+    (cons (eqvalg:column-of table name)
           (when clause
-            (destructuring-bind (open (op left right) close) clause
+            (destructuring-bind (open (left . right) close) clause
               (declare (ignore open close))
-              (list op (cons table left) right))))))
+              (eqvalg:strict-equality-of (eqvalg:column-of table left)
+                                         right))))))
 
 (defrule filter (and column #\= constant)
   (:destructure (left op right)
     (declare (ignore op))
-    (destructuring-bind (column &rest subclause) left
-      (cons (list :eq column right)
-            (when subclause (list subclause))))))
+    (destructuring-bind (column . subclause) left
+      (if subclause
+          (eqvalg:coalesce (eqvalg:equality-of column right) subclause)
+          (eqvalg:equality-of column right)))))
 
 (defrule option (and word #\= constant)
   (:destructure (left eqls right)
