@@ -28,9 +28,8 @@
     collection))
 
 (defun related-subjectp (column subject)
-  (if (listp subject)
-      (equalp column (car (last subject)))
-      (equalp column subject)))
+  (equalp column
+          (if (listp subject) (car (last subject)) subject)))
 
 (defun relatedp (column expression)
   (related-subjectp column (eqvalg:subject expression)))
