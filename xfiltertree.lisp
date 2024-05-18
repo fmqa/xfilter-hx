@@ -9,7 +9,7 @@
     :reader node-name
     :initarg :name)
    (children
-    :accessor node-children
+    :reader node-children
     :initarg :items
     :initform nil)))
 
@@ -18,4 +18,3 @@
     :reader aggregation-bins
     :initarg :bins
     :initform nil)))
-

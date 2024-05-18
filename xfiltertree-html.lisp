@@ -12,7 +12,7 @@
   (cl-who:with-html-output-to-string (s)
     (:form
      :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
-	 (:input :type "hidden" :name "$update" :value "true")
+     (:input :type "hidden" :name "$update" :value "true")
      ;; Recursively produce HTML for each node.
      (cl-who:str (htmlize-level node)))))
 

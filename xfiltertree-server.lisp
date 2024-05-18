@@ -19,14 +19,15 @@
 (defun collect-form-parameters (parameters)
   (loop for pair in parameters
         for key = (car pair)
+        for value = (cdr pair)
         for discriminator = (char key 0)
         if (eq #\$ discriminator)
-          for value = (string-downcase (cdr pair))
+          do (setf value (string-downcase value)) and
           when (member value '("true" "t" "1" "on") :test #'equal)
             collect (string-upcase (subseq key 1)) into directives
           end
         else
-          collect (cons key value) into clauses
+          collect pair into clauses
         finally (return (values clauses (make-directives directives)))))
 
 (defun respond-with-filter-tree (clauses directives)
