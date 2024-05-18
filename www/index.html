@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hypermedia Filter Demo</title>
+  </head>
+  <body>
+    <div hx-get="/fnt" hx-swap="outerHTML" hx-trigger="load"></div>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+      body {
+          font-family: sans;
+      }
+      form {
+          width: max-content;
+      }
+      [data-bin=ALL]:before {
+          content: "∑";
+      }
+      input[type=checkbox] {
+          display: none;
+      }
+      input[type=checkbox] + label {
+          border: 1px solid cornflowerblue;
+          border-radius: 3px;
+          margin: 0.5em;
+      }
+      input[type=checkbox]:checked + label {
+          background-color: lightblue;
+      }
+      fieldset[data-leaf] {
+          border: none;
+      }
+      fieldset[data-leaf] > legend {
+          display: contents;
+      }
+    </style>
+  </body>
+</html>
