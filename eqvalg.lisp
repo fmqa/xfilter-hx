@@ -151,6 +151,14 @@
 (defmethod coalesce ((left equality) (right conjunction))
   (coalesce right left))
 
+(defmethod coalesce ((left conjunction) (right membership))
+  (reduce #'coalesce
+          (conjunction-operands left)
+          :initial-value right))
+
+(defmethod coalesce ((right membership) (left conjunction))
+  (coalesce left right))
+
 (defmethod coalesce ((left conjunction) (right conjunction))
   (reduce #'coalesce
           (conjunction-operands

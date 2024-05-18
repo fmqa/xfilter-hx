@@ -18,31 +18,15 @@
 (defparameter *static-dispatcher*
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
-(defun enrich-clauses (tree dynamic)
-  (xfiltertree:traverse-if
-   #'xfiltertree:dynamic-p
-   (lambda (node)
-     (loop for (clause . bins) in dynamic
-           for clause-subject = (eqvalg:subject clause)
-           for node-subject = (xfiltertree:node-id node)
-           do (progn (when (consp node-subject)
-                       (setf node-subject (car node-subject)))
-                     (when (consp clause-subject)
-                       (setf clause-subject (car (last clause-subject))))
-                     (when (equalp node-subject clause-subject)
-                       (push (cons clause (mapcar #'list bins))
-                             (xfiltertree:aggregation-bins node))))))
-   tree)
-  tree)
-
 (defun respond-with-filter-tree (clauses update &optional dynamic)
-  (let ((tree (let ((eqvalg-sql:*join* *default-join*))
-                (xfiltertree-sql:compute-aggregations
-                 (enrich-clauses (xfiltertree-bom:make-tree) dynamic)
-                 (mapcar #'car clauses))))
-        (xfiltertree-html:*form-post* (hunchentoot:request-uri*))
-        (xfiltertree-html:*form-update* update))
-    (xfiltertree-html:htmlize tree)))
+  (let ((tree (xfiltertree-fql:extend (xfiltertree-bom:make-tree) dynamic)))
+    (let ((eqvalg-sql:*join* *default-join*))
+      (xfiltertree-sql:compute-aggregations
+       (xfiltertree-fql:constrain (xfiltertree:copy-node tree)
+                                  (mapcar #'car clauses))))
+    (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
+          (xfiltertree-html:*form-update* update))
+      (xfiltertree-html:htmlize tree))))
 
 (defun allow-methods (allowed-methods handler &optional ondisallowed)
   (if (member (hunchentoot:request-method*) allowed-methods)
@@ -89,12 +73,11 @@
            (endpoint (xfiltertree-sql:endpoint-by-uri endpoint-uri)))
        (when endpoint
          (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") endpoint-uri))
-                (tree (let ((eqvalg-sql:*join* *default-join*))
-                        (xfiltertree-sql:compute-aggregations
-                         (xfiltertree-bom:make-singleton-endpoint-node
-                          name
-                          '("ALL"))
-                         (mapcar #'car clauses)))))
+                (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))
+           (let ((eqvalg-sql:*join* *default-join*))
+             (xfiltertree-sql:compute-aggregations
+              (xfiltertree-fql:constrain (xfiltertree:copy-node tree)
+                                         (mapcar #'car clauses))))
            (xfiltertree-html:htmlize-dynamic-bins tree)))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
