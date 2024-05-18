@@ -92,15 +92,21 @@
         finally (return cols)))
 
 (defmethod coalesce ((left equality) (right equality))
-  (if (equalp left right)
-      left
-      (multiple-value-bind (left-subject left-target) (subject left)
-        (multiple-value-bind (right-subject right-target) (subject right)
-          (if (and (equalp left-subject right-subject)
-                   (not (equality-strict left))
-                   (not (equality-strict right)))
-              (membership-of left-subject (list left-target right-target))
-              (conjunction-of left right))))))
+  (multiple-value-bind (left-subject left-target) (subject left)
+    (multiple-value-bind (right-subject right-target) (subject right)
+      (if (equalp left-subject right-subject)
+          (if (equalp left-target right-target)
+              (cond
+                ((and (equality-strict left) (equality-strict right))
+                 (conjunction-of left right))
+                ((and (not (equality-strict left)) (not (equality-strict right)))
+                 (membership-of left-subject (list left-target right-target)))
+                ((equality-strict left) left)
+                (t right))
+              (if (and (not (equality-strict left)) (not (equality-strict right)))
+                  (membership-of left-subject (list left-target right-target))
+                  (conjunction-of left right)))
+          (conjunction-of left right)))))
 
 (defmethod coalesce ((left membership) (right equality))
   (multiple-value-bind (right-subject right-target) (subject right)
@@ -147,6 +153,8 @@
 
 (defmethod coalesce ((left conjunction) (right conjunction))
   (reduce #'coalesce
-  (conjunction-operands (conjunction-from (remove-duplicates (append (conjunction-operands left)
-                                               (conjunction-operands right))
-                                       :test #'equalp)))))
+          (conjunction-operands
+           (conjunction-from
+            (remove-duplicates (append (conjunction-operands left)
+                                       (conjunction-operands right))
+                               :test #'equalp)))))
