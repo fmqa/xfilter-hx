@@ -25,9 +25,9 @@
 (defun htmlize-level (node &optional (level 0))
   (cl-who:with-html-output-to-string (s)
     (:fieldset
-     :data-name (xfiltertree:node-name node)
+     :data-name (xfiltertree:node-readable-name node)
      (:legend :data-i18n ""
-              (cl-who:str (xfiltertree:node-name node)))
+              (cl-who:str (xfiltertree:node-readable-name node)))
      (cl-who:str (htmlize-content node))
      (cl-who:str
       (uiop:reduce/strcat
@@ -63,7 +63,7 @@
 
 (defmethod htmlize-content ((node xfiltertree:aggregation))
   (uiop:reduce/strcat
-   (mapcar #'htmlize-aggregation-bin (xfiltertree:aggregation-bins node))))
+   (mapcar #'htmlize-aggregation-bin (xfiltertree:aggregation-readable-bins node))))
 
 (defun htmlize-dynamic-bin (name bins)
   (let* ((clause (format nil "~A;bin=ALL" name))
@@ -118,11 +118,11 @@
    (mapcar
     (lambda (pair)
       (destructuring-bind (clause &rest bins) pair
-        (htmlize-dynamic-bin clause bins)))
+        (htmlize-dynamic-bin (xfiltertree:translate clause) bins)))
     bins)))
 
 (defmethod htmlize-content ((node xfiltertree:dynamic))
-  (let* ((name (xfiltertree:node-name node))
+  (let* ((name (xfiltertree:node-readable-name node))
          (escaped (webstr:escape name))
          (id (format nil "search--~A" escaped))
          (data (format nil "data--search-~A" escaped))

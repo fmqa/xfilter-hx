@@ -22,7 +22,9 @@
          (sql-cmd (format nil "SELECT ~{(~A)~^, ~}" sql-stmts))
          (sql-row (multiple-value-list
                    (call-with-db (lambda (db) (sqlite:execute-one-row-m-v db sql-cmd))))))
+    (terpri)
     (princ sql-cmd)
+    (terpri)
     (loop for (count pair) in (mapcar #'cons sql-row aggregations)
           do (setf (cdr pair) count))
     node))

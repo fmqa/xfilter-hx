@@ -11,21 +11,32 @@
 (defun make-event-type-node ()
   (make-instance
    'xfiltertree:aggregation
-   :name "event.type"
-   :bins (list (list "event.type=PHONE_CALL" (list "ALL"))
-               (list "event.type=E_MAIL" (list "ALL")))))
+   :name (eqvalg:column-of "event" "type")
+   :bins (list (list (eqvalg:equality-of (eqvalg:column-of "event" "type") "PHONE_CALL")
+                     (list "ALL"))
+               (list (eqvalg:equality-of (eqvalg:column-of "event" "type") "E_MAIL")
+                     (list "ALL")))))
 
 (defun make-connection-status-node ()
   (make-instance
    'xfiltertree:aggregation
-   :name "event[type=PHONE_CALL].connectionStatus"
-   :bins (list (list "event[type=PHONE_CALL].connectionStatus=ACCEPTED" (list "ALL"))
-               (list "event[type=PHONE_CALL].connectionStatus=REJECTED" (list "ALL")))))
+   :name (cons (eqvalg:column-of "event" "connectionStatus")
+               (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
+   :bins (list (list (eqvalg:conjunction-of
+                      (eqvalg:equality-of (eqvalg:column-of "event" "connectionStatus")
+                                          "ACCEPTED")
+                      (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
+                     (list "ALL"))
+               (list (eqvalg:conjunction-of
+                      (eqvalg:equality-of (eqvalg:column-of "event" "connectionStatus")
+                                          "REJECTED")
+                      (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
+                     (list "ALL")))))
 
 (defun make-endpoint-node (&optional bins)
   (make-instance
    'xfiltertree:dynamic
-   :name "endpoint.uri"
+   :name (eqvalg:column-of "endpoint" "uri")
    :searcher "/endpoints/search"
    :querier "/endpoints/query"
    :bins bins))

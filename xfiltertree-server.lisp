@@ -18,10 +18,29 @@
 (defparameter *static-dispatcher*
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
+(defun enrich-clauses (tree dynamic)
+  (xfiltertree:traverse
+   (lambda (node)
+     (when (typep node 'xfiltertree:dynamic)
+       (loop for (clause . bin) in dynamic
+             for clause-subject = (eqvalg:subject clause)
+             for node-subject = (xfiltertree:node-name node)
+             do (progn
+                  (when (consp node-subject)
+                    (setf node-subject (car node-subject)))
+                  (when (consp clause-subject)
+                    (setf clause-subject (car (last clause-subject))))
+                  (when (equalp node-subject clause-subject)
+                    (push (list clause (list bin))
+                          (xfiltertree:aggregation-bins node)))))))
+   tree)
+  tree)
+
 (defun respond-with-filter-tree (clauses update &optional dynamic)
   (let ((tree (let ((eqvalg-sql:*join* *default-join*))
-                 (xfiltertree-sql:compute-aggregations (xfiltertree-bom:make-tree)
-                                                       (mapcar #'car clauses))))
+                (xfiltertree-sql:compute-aggregations
+                 (enrich-clauses (xfiltertree-bom:make-tree) dynamic)
+                 (mapcar #'car clauses))))
         (xfiltertree-html:*form-post* (hunchentoot:request-uri*))
         (xfiltertree-html:*form-update* update))
     (xfiltertree-html:htmlize tree)))
@@ -45,7 +64,8 @@
    '(:HEAD :GET :POST)
    (lambda ()
      (respond-with-filter-tree (mapcar #'parse-filter-bin-clause clause)
-                               update dynamic))))
+                               update
+                               (mapcar #'parse-filter-bin-clause dynamic)))))
 
 (hunchentoot:define-easy-handler (endpoint-search-route :uri "/endpoints/search") (q)
   (allow-methods
@@ -69,7 +89,7 @@
      (let ((clauses (mapcar #'parse-filter-bin-clause clause))
            (endpoint (xfiltertree-sql:endpoint-by-uri endpoint-uri)))
        (when endpoint
-         (let* ((name (format nil "endpoint.uri='~A'" endpoint-uri))
+         (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") endpoint-uri))
                 (tree (let ((eqvalg-sql:*join* *default-join*))
                         (xfiltertree-sql:compute-aggregations
                          (xfiltertree-bom:make-singleton-endpoint-node

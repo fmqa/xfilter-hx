@@ -1,3 +1,3 @@
 (asdf:defsystem xfiltertree-bom
-  :depends-on ("xfiltertree")
+  :depends-on ("xfiltertree" "eqvalg")
   :components ((:file "xfiltertree-bom")))

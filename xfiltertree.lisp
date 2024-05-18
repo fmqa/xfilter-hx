@@ -3,7 +3,10 @@
   (:export #:node #:node-name #:node-children
            #:aggregation #:aggregation-bins
            #:dynamic #:dynamic-searcher #:dynamic-querier
-           #:traverse))
+           #:traverse
+           #:translate
+           #:node-readable-name
+           #:aggregation-readable-bins))
 (in-package :xfiltertree)
 
 (defclass node ()
@@ -32,3 +35,16 @@
 (defun traverse (func node)
   (funcall func node)
   (dolist (child (node-children node)) (traverse func child)))
+
+(defgeneric translate (id))
+
+(defmethod translate (id) id)
+
+(defun node-readable-name (nd)
+  (translate (node-name nd)))
+
+(defun aggregation-readable-bins (agg)
+  (mapcar (lambda (pair)
+            (destructuring-bind (name . aggs) pair
+              (cons (translate name) aggs)))
+          (aggregation-bins agg)))
