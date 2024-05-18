@@ -37,7 +37,7 @@
 (defun htmlize-aggregation-triplet (predicate aggregation value)
   (let ((escaped (webstr:escape predicate)))
     (cl-who:with-html-output-to-string (s)
-      (:input :type "checkbox" :id escaped :name predicate :value aggregation)
+      (:input :type "checkbox" :id escaped :name (cl-who:escape-string predicate) :value aggregation)
       (:label
        :id (format nil "label--~A" escaped)
        ;; If we're updating an existing DOM form, mark this
