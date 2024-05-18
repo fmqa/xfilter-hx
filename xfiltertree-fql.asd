@@ -1,5 +1,5 @@
 (asdf:defsystem xfiltertree-fql
-  :depends-on ("xfiltertree" "fql" "fql-util")
+  :depends-on ("xfiltertree" "fql")
   :components ((:file "xfiltertree-fql-xform"))
   :in-order-to ((test-op (test-op :xfiltertree-fql/test))))
 
