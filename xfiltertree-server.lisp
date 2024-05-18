@@ -38,12 +38,12 @@
           (xfiltertree-html:*form-update* (funcall directives :update)))
       (xfiltertree-html:htmlize tree))))
 
-(defun allow-methods (allowed-methods handler &optional result)
+(defun allow-methods (allowed-methods handler &optional ondisallowed)
   (if (member (hunchentoot:request-method*) allowed-methods)
       (funcall handler)
       (progn
         (setf (hunchentoot:return-code*) hunchentoot:+HTTP-METHOD-NOT-ALLOWED+)
-        result)))
+        (and ondisallowed (funcall ondisallowed)))))
 
 (hunchentoot:define-easy-handler (fnt-route :uri "/fnt") ()
   (allow-methods
@@ -52,10 +52,47 @@
      (multiple-value-call #'respond-with-filter-tree
        (collect-form-parameters (hunchentoot:post-parameters*))))))
 
-(hunchentoot:define-easy-handler (test-route :uri "/test") ()
+(hunchentoot:define-easy-handler (endpoint-search-route :uri "/endpoints/search") (q)
   (allow-methods
    '(:HEAD :GET :POST)
-   (lambda () "<option value='foo'></option><option value='bar'></option>")))
+   (lambda ()
+     (uiop:reduce/strcat
+      (mapcar
+       (lambda (row)
+         (destructuring-bind (id uri) row
+           (declare (ignore id))
+           (cl-who:with-html-output-to-string (s)
+             (:option :value (cl-who:escape-string uri)))))
+       (xfiltertree-sql:endpoint-search q))))))
+
+(hunchentoot:define-easy-handler (endpoint-query-route :uri "/endpoints/query") (q)
+  (allow-methods
+   '(:HEAD :GET :POST)
+   (lambda ()
+     (let ((endpoint (xfiltertree-sql:endpoint-by-uri q)))
+       (if endpoint
+           (destructuring-bind (id uri) endpoint
+             (declare (ignore id))
+             (let* ((name (format nil "endpoint.uri=~A" uri))
+                    (escaped (webstr:escape name)))
+               (cl-who:with-html-output-to-string (s)
+                 (:fieldset
+                  :id (format nil "fieldset--~A" escaped)
+                  :data-leaf "true"
+                  (:legend (cl-who:str name))
+                  (:input :type "hidden" :name (cl-who:escape-string (format nil "@~A" name))
+                          :value "add")
+                  (:input :id escaped
+                          :type "checkbox"
+                          :name name
+                          :value "ALL")
+                  (:label :id (format nil "label--~A" escaped)
+                          :for escaped
+                          (:span :data-bin "ALL" (cl-who:str "0")))
+                  (:script
+                   (cl-who:str
+                    (format nil "var selector = '#fieldset--~A'; var elt = htmx.find(selector);
+if (elt && elt.parentElement) { var attr = elt.parentElement.getAttribute('hx-select-oob'); (attr && attr.split(',').includes(selector)) || elt.parentElement.setAttribute('hx-select-oob', attr ? attr + ',' + selector : selector); }" escaped))))))))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))

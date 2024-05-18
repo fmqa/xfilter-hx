@@ -15,7 +15,7 @@
     (cl-who:with-html-output-to-string (s)
       (:form
        :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
-       (:input :type "hidden" :name "$update" :value "true")
+       (:input :type "hidden" :name (cl-who:escape-string "$update") :value "true")
        ;; Recursively produce HTML for each node.
        (cl-who:str (htmlize-level node)))
       ;; Write out auxiliary HTML required by the emitted
@@ -75,6 +75,8 @@
             (:datalist :id data))
           *epilogue*)
     (cl-who:with-html-output-to-string (s)
-      (:input :id id :name name :form form :type "search" :list data :|hx-on:change| "event.stopPropagation();")
+      (:input :id id :name "q" :form form :type "search" :list data :|hx-on:change| "event.stopPropagation();")
       (:button :hx-post (xfiltertree:dynamic-query-uri node)
-               :hx-include "previous input" "+"))))
+               :hx-include "previous input"
+               :hx-swap "afterend"
+               "+"))))
