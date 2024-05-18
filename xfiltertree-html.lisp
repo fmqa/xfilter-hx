@@ -12,16 +12,9 @@
   (cl-who:with-html-output-to-string (s)
     (:form
      :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
-     (:input :type "hidden" :name "lru")
-     (:div
-      ;; Track the LRU node name.
-      ;; Ensures that the client sends the LRU element's name as part of the
-      ;; form request payload.
-      :|hx-on:change|
-      (cl-who:escape-string
-       "this.previousElementSibling.value = htmx.closest(event.target, '[data-name]').dataset.name || ''")
-      ;; Recursively produce HTML for each node.
-      (cl-who:str (htmlize-level node))))))
+	 (:input :type "hidden" :name "$update" :value "true")
+     ;; Recursively produce HTML for each node.
+     (cl-who:str (htmlize-level node)))))
 
 (defun htmlize-level (node &optional (level 0))
   (cl-who:with-html-output-to-string (s)
@@ -38,7 +31,7 @@
 (defun htmlize-aggregation-triplet (predicate aggregation value)
   (let ((escaped (webstr:escape predicate)))
     (cl-who:with-html-output-to-string (s)
-      (:input :type "checkbox" :id escaped :name escaped :value aggregation)
+      (:input :type "checkbox" :id escaped :name predicate :value aggregation)
       (:label
        :id (format nil "label--~A" escaped)
        ;; If we're updating an existing DOM form, mark this

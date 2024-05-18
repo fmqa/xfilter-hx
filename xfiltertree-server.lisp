@@ -10,26 +10,46 @@
 (defparameter *static-dispatcher*
   (hunchentoot:create-folder-dispatcher-and-handler "/static/" (format nil "~Awww/" (uiop:getcwd))))
 
-(hunchentoot:define-easy-handler (fnt-route :uri "/fnt") ()
-  (unless (member (hunchentoot:request-method*) '(:HEAD :GET :POST))
-    (setf (hunchentoot:return-code*) hunchentoot:+HTTP-METHOD-NOT-ALLOWED+)
-    (setf (hunchentoot:content-type*) "text/plain")
-    (return-from fnt-route "Invalid Request Method"))
-  (let* ((form-parameters (hunchentoot:post-parameters*))
-         (lru (assoc "lru" form-parameters :test 'equal))
-         (clause-parameters (remove lru form-parameters))
-         (string-clauses (xfiltertree-html:unescape-filter-clauses clause-parameters))
-         (sorted-clauses (xfiltertree-html:sort-filter-clauses
-                          (xfiltertree-html:parse-filter-clauses string-clauses)))
-         (tree (xfiltertree-sql:query-aggregation-tree sorted-clauses)))
-    ;; Ensure lru is a string
-    (if (and lru (not (zerop (length (cdr lru)))))
-        (setf lru (cdr lru))
-        (setf lru nil))
-    ;; Generate HTML form
+(defun make-directives (haystack)
+  (lambda (needle)
+    (member (if (symbolp needle) (symbol-name needle) (string-upcase needle))
+            haystack
+            :test #'equal)))
+
+(defun collect-form-parameters (parameters)
+  (loop for pair in parameters
+        for key = (car pair)
+        for discriminator = (char key 0)
+        if (eq #\$ discriminator)
+          for value = (string-downcase (cdr pair))
+          when (member value '("true" "t" "1" "on") :test #'equal)
+            collect (string-upcase (subseq key 1)) into directives
+          end
+        else
+          collect (cons key value) into clauses
+        finally (return (values clauses (make-directives directives)))))
+
+(defun respond-with-filter-tree (clauses directives)
+  (let* ((parsed-clauses (xfiltertree-html:parse-filter-clauses clauses))
+         (hier-clauses (xfiltertree-html:sort-filter-clauses parsed-clauses))
+         (tree (xfiltertree-sql:query-aggregation-tree hier-clauses)))
     (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
-          (xfiltertree-html:*form-update* lru))
+          (xfiltertree-html:*form-update* (funcall directives :update)))
       (xfiltertree-html:htmlize tree))))
+
+(defun allow-methods (allowed-methods handler &optional result)
+  (if (member (hunchentoot:request-method*) allowed-methods)
+      (funcall handler)
+      (progn
+        (setf (hunchentoot:return-code*) hunchentoot:+HTTP-METHOD-NOT-ALLOWED+)
+        result)))
+
+(hunchentoot:define-easy-handler (fnt-route :uri "/fnt") ()
+  (allow-methods
+   '(:HEAD :GET :POST)
+   (lambda ()
+     (multiple-value-call #'respond-with-filter-tree
+       (collect-form-parameters (hunchentoot:post-parameters*))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))

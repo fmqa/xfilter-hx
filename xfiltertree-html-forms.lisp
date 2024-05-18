@@ -1,9 +1,5 @@
 (in-package :xfiltertree-html)
 
-(defun unescape-filter-clauses (clauses)
-  (loop for (clause . value) in clauses
-        collect (cons (webstr:unescape clause) value)))
-
 (defun parse-mode (string)
   (if (equal "ALL" string)
       :all))

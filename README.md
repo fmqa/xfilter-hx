@@ -61,9 +61,7 @@ _Uses xfiltertree, fql, webstr_.
 
 #### Clause Processing
 
-`(xfiltertree-html:unescape-filter-clauses clauses)` unescapes filtering clauses, preparing them to be passed to `xfiltertree-html:parse-filter-clauses`.
-
-A clause is a list of pairs of the form `((filter . bin) …)` where _filter_ is an *escaped* _fql_ filter string and _bin_ is an opaque bin designator.
+A clause is a list of pairs of the form `((filter . bin) …)` where _filter_ is a _fql_ filter string and _bin_ is an opaque bin designator. The HTML form values are received by the server as such pairs.
 
 `(xfiltertree-html:parse-filter-clauses clauses)` parses `((filter . bin) …)` (where _filter_ is unescaped) into structured lists using `fql:parse-filter`.
 
@@ -71,7 +69,7 @@ The resulting structured list is converted into a hierarchical tree of the form 
 
 #### Form Generation
 
-`(xfiltertree-html:htmlize node)` returns a strings containing a htmx-enabled hypermedia HTML form given a `xfiltertree:node` instance.
+`(xfiltertree-html:htmlize node)` returns a string containing a htmx-enabled hypermedia HTML form given a `xfiltertree:node` instance.
 
 `xfiltertree:aggregation` nodes are transformed into `<fieldset>` nodes containing checkbox inputs, allowing for selection of aggregation bin. One checkbox input is generated for each bin. The `name=…` attribute is set to be equivalent to the _webstr:escape_-ed bin _fql_ filter string, and the `value=…` attribute is set to the bin specification string.
 
