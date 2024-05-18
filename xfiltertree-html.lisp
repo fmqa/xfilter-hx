@@ -113,6 +113,14 @@
                                 attr ? attr + ',' + selector : selector);~
                           })('#fieldset--~A')" escaped)))))))
 
+(defun htmlize-dynamic-bins (bins)
+  (uiop:reduce/strcat
+   (mapcar
+    (lambda (pair)
+      (destructuring-bind (clause &rest bins) pair
+        (htmlize-dynamic-bin clause bins)))
+    bins)))
+
 (defmethod htmlize-content ((node xfiltertree:dynamic))
   (let* ((name (xfiltertree:node-name node))
          (escaped (webstr:escape name))
@@ -137,8 +145,4 @@
                 :hx-swap "afterend"
                 "+")
        (cl-who:str
-        (uiop:reduce/strcat
-         (mapcar (lambda (pair)
-                   (destructuring-bind (clause &rest bins) pair
-                     (htmlize-dynamic-bin clause bins)))
-                 (xfiltertree:aggregation-bins node))))))))
+        (htmlize-dynamic-bins (xfiltertree:aggregation-bins node)))))))

@@ -1,6 +1,8 @@
 (defpackage fql-sql
   (:use :cl)
   (:export
+   #:*substitutions*
+   #:*join*
    #:sql-quote
    #:sqlize-term
    #:sqlize-expression
@@ -13,6 +15,8 @@
 
 (defparameter *substitutions* nil)
 
+(defparameter *join* nil)
+
 (defun duplicate-single-quotes (string)
   (with-output-to-string (out)
     (loop for char across string
@@ -21,6 +25,17 @@
 
 (defun substitute-table (name)
   (or (cdr (assoc name *substitutions* :test #'equal)) name))
+
+(defun join-conjunctions (table-names)
+  (loop with join-conjunctions = nil
+        for left = (car table-names) then (car rest)
+        for rest = (cdr table-names) then (cdr rest)
+        while rest
+        do (loop for right in rest
+                 for join = (cdr (or (assoc (cons left right) *join* :test #'equal)
+                                     (assoc (cons right left) *join* :test #'equal)))
+                 do (when join (push join join-conjunctions)))
+        finally (return join-conjunctions)))
 
 (defun sql-quote (string)
   (format nil "'~A'" (duplicate-single-quotes string)))
@@ -48,11 +63,16 @@
   (format nil "~{~A~^ AND ~}" (mapcar #'sqlize-expression group)))
 
 (defun sqlize-count-conjoined-group (group)
-  (format nil "SELECT COUNT(*) FROM ~A WHERE ~A"
-          (format nil "~{~A~^, ~}"
-                  (mapcar #'substitute-table
-                          (fql-util:group-table-names group)))
-          (sqlize-conjugate-group group)))
+  (let* ((table-names (mapcar #'substitute-table (fql-util:group-table-names group)))
+         (joiners (join-conjunctions table-names))
+         (join-table-names (apply #'append (mapcar #'car joiners)))
+         (join-conj (apply #'append (mapcar #'cdr joiners))))
+    (format nil "SELECT COUNT(*) FROM ~A WHERE ~A"
+            (format nil "~{~A~^, ~}"
+                    (remove-duplicates (append table-names join-table-names)
+                                       :test #'equal))
+            (sqlize-conjugate-group (remove-duplicates (append group join-conj)
+                                                       :test #'equal)))))
 
 (defun sqlize-aggregated-conjoined-group (agroup)
   (destructuring-bind (group . aggs) agroup

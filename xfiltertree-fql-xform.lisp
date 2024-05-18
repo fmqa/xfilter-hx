@@ -3,7 +3,8 @@
   (:export
    #:queries
    #:collect-node-queries
-   #:constrain-tree-queries))
+   #:constrain-tree-queries
+   #:nodecolp))
 (in-package :xfiltertree-fql)
 
 (defgeneric queries (node))
@@ -74,13 +75,17 @@
                    (combine-expression constraints additional-expression))
         finally (return constraints)))
 
+(defun nodecolp (node column)
+  (equal column
+         (car (fql:parse-column (xfiltertree:node-name node)))))
+
 (defun constrain-tree-queries (tree constraint-groups)
   (loop with node-aggregation-groups = (collect-node-queries tree)
         for conjunction-constraint in constraint-groups
         for subject = (fql-util:group-first-table conjunction-constraint)
         when subject do
           (loop for (node . aggregation-groups) in node-aggregation-groups
-                unless (equal subject (car (fql:parse-column (xfiltertree:node-name node))))
+                unless (nodecolp node subject)
                   do (loop for node-conjunctions-aggregations in aggregation-groups
                            for node-conjunctions = (car node-conjunctions-aggregations)
                            do (setf (car node-conjunctions-aggregations)
