@@ -1,7 +1,10 @@
 (defpackage xfiltertree
   (:use :cl)
   (:export #:node #:node-name #:node-children
-           #:aggregation #:aggregation-bins))
+           #:aggregation #:aggregation-bins
+           #:dynamic
+           #:dynamic-search-uri
+           #:dynamic-query-uri))
 (in-package :xfiltertree)
 
 (defclass node ()
@@ -18,3 +21,11 @@
     :reader aggregation-bins
     :initarg :bins
     :initform nil)))
+
+(defclass dynamic (node)
+  ((search-uri
+    :reader dynamic-search-uri
+    :initarg :search-uri)
+   (query-uri
+    :reader dynamic-query-uri
+    :initarg :query-uri)))

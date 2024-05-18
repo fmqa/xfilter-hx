@@ -52,6 +52,11 @@
      (multiple-value-call #'respond-with-filter-tree
        (collect-form-parameters (hunchentoot:post-parameters*))))))
 
+(hunchentoot:define-easy-handler (test-route :uri "/test") ()
+  (allow-methods
+   '(:HEAD :GET :POST)
+   (lambda () "<option value='foo'></option><option value='bar'></option>")))
+
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))
 

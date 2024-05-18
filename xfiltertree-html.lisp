@@ -4,17 +4,23 @@
 
 (defparameter *form-update* nil "Update existing form")
 
+(defparameter *epilogue* nil)
+
 (defgeneric htmlize-content (node))
 
 (defmethod htmlize-content ((node xfiltertree:node)))
 
 (defun htmlize (node)
-  (cl-who:with-html-output-to-string (s)
-    (:form
-     :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
-     (:input :type "hidden" :name "$update" :value "true")
-     ;; Recursively produce HTML for each node.
-     (cl-who:str (htmlize-level node)))))
+  (let ((*epilogue* nil))
+    (cl-who:with-html-output-to-string (s)
+      (:form
+       :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
+       (:input :type "hidden" :name "$update" :value "true")
+       ;; Recursively produce HTML for each node.
+       (cl-who:str (htmlize-level node)))
+      ;; Write out auxiliary HTML required by the emitted
+      ;; HTML elements
+      (cl-who:str (uiop:reduce/strcat *epilogue*)))))
 
 (defun htmlize-level (node &optional (level 0))
   (cl-who:with-html-output-to-string (s)
@@ -54,3 +60,21 @@
 (defmethod htmlize-content ((node xfiltertree:aggregation))
   (uiop:reduce/strcat
    (mapcar #'htmlize-aggregation-bin (xfiltertree:aggregation-bins node))))
+
+(defmethod htmlize-content ((node xfiltertree:dynamic))
+  (let* ((name (xfiltertree:node-name node))
+         (escaped (webstr:escape name))
+         (id (format nil "search--~A" escaped))
+         (data (format nil "data--search-~A" escaped))
+         (form (format nil "form--~A" escaped)))
+    (push (cl-who:with-html-output-to-string (s)
+            (:form :id form :hx-post (xfiltertree:dynamic-search-uri node)
+                   :onsubmit "return false;"
+                   :hx-target "next"
+                   :hx-trigger (format nil "input changed from:#~A, focus once from:#~A, focus changed from:#~A" id id id))
+            (:datalist :id data))
+          *epilogue*)
+    (cl-who:with-html-output-to-string (s)
+      (:input :id id :name name :form form :type "search" :list data :|hx-on:change| "event.stopPropagation();")
+      (:button :hx-post (xfiltertree:dynamic-query-uri node)
+               :hx-include "previous input" "+"))))
