@@ -48,6 +48,6 @@
    :name "Basic"
    :items (list (consume-event-type consume)
                 (consume-phone-call-connection-status consume)
-                (make-instance 'xfiltertree:dynamic :name "endpoints"
+                (make-instance 'xfiltertree:dynamic :name "event.endpoints"
                                                     :search-uri "/endpoints/search"
                                                     :query-uri "/endpoints/query"))))
