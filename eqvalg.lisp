@@ -70,12 +70,15 @@
   (conjunction-from operands))
 
 (defun conjunction-singleton-p (conj)
+  "Returns a true value if CONJ consists of a single element"
   (destructuring-bind (head . tail) (conjunction-operands conj)
     (and (not tail) head)))
 
-(defgeneric coalesce (left right))
+(defgeneric coalesce (left right)
+  (:documentation "Combines LEFT and RIGHT"))
 
-(defgeneric subject (term))
+(defgeneric subject (term)
+  (:documentation "Retrieves the subject column of TERM"))
 
 (defmethod subject ((term equality))
   (cond ((column-p (equality-left term)) (values (equality-left term)

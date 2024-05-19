@@ -1,9 +1,5 @@
 (in-package :fql)
 
-;; Predicate version of the WORD parser in FQL-PARSE
-(defun wordp (s)
-  (and (handler-case (parse 'word s) (parse-error nil)) s))
-
 ;; If the given value is a non-wordp string, quote it, otherwise
 ;; behave as an identity function
 (defun quote-value (value)

@@ -55,6 +55,10 @@
 (defrule word (and (or #\_ (alpha-char-p character)) (* (or #\_ (alphanumericp character))))
   (:text t))
 
+;; Predicate version of the WORD rule
+(defun wordp (s)
+  (and (handler-case (parse 'word s) (parse-error nil)) s))
+
 ;; A duplicated single quote is an escape sequence for a single quote
 (defrule single-quote-escape (and #\' #\')
   (:constant #\'))
