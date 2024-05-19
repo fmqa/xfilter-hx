@@ -4,11 +4,19 @@
 
 (defparameter *form-update* nil "Update existing form")
 
+(defparameter *translate* #'identity "Translation function")
+
 (defparameter *epilogue* nil)
 
 (defgeneric htmlize-content (node))
 
 (defmethod htmlize-content ((node xfiltertree:node)))
+
+(defun translate (obj)
+  (funcall *translate* obj))
+
+(defun node-name (node)
+  (translate (xfiltertree:node-id node)))
 
 (defun htmlize (node)
   (let ((*epilogue* nil))
@@ -25,9 +33,9 @@
 (defun htmlize-level (node &optional (level 0))
   (cl-who:with-html-output-to-string (s)
     (:fieldset
-     :data-name (xfiltertree:node-name node)
+     :data-name (node-name node)
      (:legend :data-i18n ""
-              (cl-who:str (xfiltertree:node-name node)))
+              (cl-who:str (node-name node)))
      (cl-who:str (htmlize-content node))
      (cl-who:str
       (uiop:reduce/strcat
@@ -51,22 +59,24 @@
     (destructuring-bind (cluster &rest count) pair
       (htmlize-aggregation-triplet name cluster count))))
 
-(defun htmlize-aggregation-bin (name value)
-  (cl-who:with-html-output-to-string (s)
-    (:fieldset
-     :data-leaf "true"
-     (:legend :data-i18n "" (cl-who:str name))
-     (cl-who:str
-      (uiop:reduce/strcat
-       (mapcar (make-aggregation-bin-htmlizer name)
-               value))))))
+(defun htmlize-aggregation-bin (id value)
+  (let ((name (translate id)))
+    (cl-who:with-html-output-to-string (s)
+      (:fieldset
+       :data-leaf "true"
+       (:legend :data-i18n "" (cl-who:str name))
+       (cl-who:str
+        (uiop:reduce/strcat
+         (mapcar (make-aggregation-bin-htmlizer name)
+                 value)))))))
 
 (defmethod htmlize-content ((node xfiltertree:aggregation))
   (uiop:reduce/strcat
    (xfiltertree:aggregation-map #'htmlize-aggregation-bin node)))
 
-(defun htmlize-dynamic-bin (name bins)
-  (let* ((clause (format nil "~A;bin=ALL" name))
+(defun htmlize-dynamic-bin (id bins)
+  (let* ((name (translate id))
+         (clause (format nil "~A;bin=ALL" name))
          (escaped (webstr:escape name)))
     (cl-who:with-html-output-to-string (s)
       (:fieldset
@@ -118,7 +128,7 @@
    (xfiltertree:aggregation-map #'htmlize-dynamic-bin aggregation)))
 
 (defmethod htmlize-content ((node xfiltertree:dynamic))
-  (let* ((name (xfiltertree:node-name node))
+  (let* ((name (node-name node))
          (escaped (webstr:escape name))
          (id (format nil "search--~A" escaped))
          (data (format nil "data--search-~A" escaped))

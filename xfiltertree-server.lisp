@@ -25,7 +25,8 @@
        (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
                                      (mapcar #'car clauses))))
     (let ((xfiltertree-html:*form-post* (hunchentoot:request-uri*))
-          (xfiltertree-html:*form-update* update))
+          (xfiltertree-html:*form-update* update)
+          (xfiltertree-html:*translate* #'fql:stringify))
       (xfiltertree-html:htmlize tree))))
 
 (defun allow-methods (allowed-methods handler &optional ondisallowed)
@@ -77,8 +78,9 @@
            (let ((eqvalg-sql:*join* *default-join*))
              (xfiltertree-sql:compute-aggregations
               (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
-                                           (mapcar #'car clauses))))
-           (xfiltertree-html:htmlize-dynamic-bins tree)))))))
+                                            (mapcar #'car clauses))))
+           (let ((xfiltertree-html:*translate* #'fql:stringify))
+             (xfiltertree-html:htmlize-dynamic-bins tree))))))))
 
 (hunchentoot:define-easy-handler (root-route :uri "/") ()
   (hunchentoot:redirect "/static/index.html"))

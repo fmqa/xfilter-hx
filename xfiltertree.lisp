@@ -6,9 +6,6 @@
            #:copy-node
            #:traverse
            #:traverse-if
-           #:translate
-           #:node-name
-           #:aggregation-map-id
            #:aggregation-map
            #:aggregation-foreach))
 (in-package :xfiltertree)
@@ -71,22 +68,11 @@
   (traverse (lambda (nd) (when (funcall pred nd) (funcall func nd)))
             node))
 
-(defgeneric translate (id))
-
-(defmethod translate (id) id)
-
-(defun node-name (node)
-  (translate (node-id node)))
-
-(defun aggregation-map-id (function aggregation)
+(defun aggregation-map (function aggregation)
   (mapcar (lambda (pair)
             (destructuring-bind (id . bins) pair
               (funcall function id bins)))
           (aggregation-bins aggregation)))
-
-(defun aggregation-map (function aggregation)
-  (aggregation-map-id (lambda (id bins) (funcall function (translate id) bins))
-                      aggregation))
 
 (defun aggregation-foreach (function aggregation)
   (loop for (id . bins) in (aggregation-bins aggregation)

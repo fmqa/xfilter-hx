@@ -1,9 +1,3 @@
-(defpackage fql
-  (:use :cl :esrap)
-  (:export
-   #:parse-filter
-   #:parse-column
-   #:parse-filter-with-options))
 (in-package :fql)
 
 ;; Parses simple filter strings of the form
