@@ -33,7 +33,8 @@
     :reader dynamic-querier
     :initarg :querier)))
 
-(defgeneric copy-node (nd))
+(defgeneric copy-node (nd)
+  (:documentation "Clones the given node recursively"))
 
 (defmethod copy-node ((nd node))
   (make-instance 'node
@@ -55,25 +56,33 @@
                  :querier (dynamic-querier nd)))
 
 (defun aggregation-p (node)
+  "Returns t if NODE is an AGGREGATION"
   (typep node 'aggregation))
 
 (defun dynamic-p (node)
+  "Return t if NODE is a DYNAMIC node"
   (typep node 'dynamic))
 
 (defun traverse (func node)
+  "Calls FUNC on NODE and all its children in depth-first order"
   (funcall func node)
   (dolist (child (node-children node)) (traverse func child)))
 
 (defun traverse-if (pred func node)
+  "Calls FUNC on both NODE and any children that satisfy the predicate PRED"
   (traverse (lambda (nd) (when (funcall pred nd) (funcall func nd)))
             node))
 
-(defun aggregation-map (function aggregation)
+(defun aggregation-map (bifunction aggregation)
+  "Returns a list with the results of mapping BIFUNCTION onto
+   the given AGGREGATION node's aggregation pairs"
   (mapcar (lambda (pair)
             (destructuring-bind (id . bins) pair
-              (funcall function id bins)))
+              (funcall bifunction id bins)))
           (aggregation-bins aggregation)))
 
-(defun aggregation-foreach (function aggregation)
+(defun aggregation-foreach (bifunction aggregation)
+  "Calls BIFUNCTION with the id and bins of each aggregation
+   in AGGREGATION"
   (loop for (id . bins) in (aggregation-bins aggregation)
-        do (funcall function id bins)))
+        do (funcall bifunction id bins)))

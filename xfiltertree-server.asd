@@ -1,3 +1,3 @@
 (asdf:defsystem xfiltertree-server
-  :depends-on ("webstr" "fql" "xfiltertree-html" "xfiltertree-sql" "hunchentoot")
+  :depends-on ("fql" "xfiltertree-bom" "xfiltertree-eqvalg" "xfiltertree-html" "xfiltertree-sql" "hunchentoot")
   :components ((:file "xfiltertree-server")))

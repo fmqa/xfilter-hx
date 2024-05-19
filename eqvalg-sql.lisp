@@ -6,20 +6,18 @@
    #:sqlize-aggregation))
 (in-package :eqvalg-sql)
 
-(defparameter *join* nil)
+(defparameter *join* nil "associative list of column pairs to EQVALG expressions")
 
-(defgeneric sqlize (obj))
+(defgeneric sqlize (obj)
+  (:documentation "Translate an EQVALG object obj to SQL"))
 
-(defun duplicate-single-quotes (string)
-  (with-output-to-string (out)
-    (loop for char across string
-          do (progn (when (eq #\' char) (write-char char out))
-                    (write-char char out)))))
-
+;; Finds the value associated with (LEFT . RIGHT) in *JOIN*, or if not found,
+;; the value associated with (RIGHT . LEFT)
 (defun join-table-for (left right)
   (cdr (or (assoc (cons left right) *join* :test #'equal)
            (assoc (cons right left) *join* :test #'equal))))
 
+;; Returns a list of EQVALG expressions joining the given table columns
 (defun join-tables (tables)
   (loop with joiners = nil
         for left = (car tables) then (car rest)
@@ -31,7 +29,12 @@
         finally (return joiners)))
 
 (defmethod sqlize ((obj string))
-  (format nil "'~A'" (duplicate-single-quotes obj)))
+  (with-output-to-string (out)
+    (loop initially (write-char #\' out)
+          for char across obj
+          do (progn (when (eq #\' char) (write-char char out))
+                    (write-char char out))
+          finally (write-char #\' out))))
 
 (defmethod sqlize ((obj number))
   (format nil "~A" obj))
@@ -55,9 +58,12 @@
         (t (mapcar #'eqvalg:column-table subject))))
 
 (defun sqlize-aggregation (obj)
+  ;; Fuse the aggregation filter with the joining predicates
   (setf obj (reduce #'eqvalg:coalesce
                     (join-tables (remove-duplicates (subject-tables (eqvalg:subject obj))))
                     :initial-value obj))
+  ;; Construct SQL selection statement from comma-delimited table names in the FROM
+  ;; clause, and the stringified aggregation filter in the WHERE clause
   (format nil "SELECT COUNT(*) FROM ~{~A~^, ~} WHERE ~A"
           (remove-duplicates (subject-tables (eqvalg:subject obj)) :test #'equal)
           (sqlize obj)))

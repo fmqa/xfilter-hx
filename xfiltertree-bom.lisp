@@ -23,13 +23,13 @@
    :id (cons (eqvalg:column-of "event" "connectionStatus")
              (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
    :bins (list (list (eqvalg:conjunction-of
-                      (eqvalg:equality-of (eqvalg:column-of "event" "connectionStatus")
-                                          "ACCEPTED")
+                      (eqvalg:equality-of
+                       (eqvalg:column-of "event" "connectionStatus") "ACCEPTED")
                       (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
                      (list "ALL"))
                (list (eqvalg:conjunction-of
-                      (eqvalg:equality-of (eqvalg:column-of "event" "connectionStatus")
-                                          "REJECTED")
+                      (eqvalg:equality-of
+                       (eqvalg:column-of "event" "connectionStatus") "REJECTED")
                       (eqvalg:strict-equality-of (eqvalg:column-of "event" "type") "PHONE_CALL"))
                      (list "ALL")))))
 

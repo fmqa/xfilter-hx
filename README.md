@@ -31,74 +31,88 @@ Then access the server at http://localhost:8080
 
 ## Systems
 
-### webstr
+### WEBSTR
 
-Provides `webstr:escape` that hex-escapes strings for safe usage in HTML/CSS.
+Provides `WEBSTR:ESCAPE` that hex-escapes strings for safe usage in HTML/CSS.
 All non-alphanumeric characters _C_ are translated to `_XX_` where `XX = hex(C)`.
 
-`webstr:unescape` unescapes any string produced by `webstr:escape` so that `(webstr:unescape (webstr:escape) S) ≣ S`.
+`WEBSTR:UNESCAPE` unescapes any string produced by `WEBSTR:ESCAPE` so that `(WEBSTR:UNESCAPE (WEBSTR:ESCAPE) S) ≣ S`.
 
-### fql
+### EQVALG
 
-Parser & grammar definition for a simple equivalency expression language. `(fql:parse-filter string)` parses _string_ into a structured list.
+Equivalence algebra system. Provides `EQUALITY` `MEMBERSHIP` and `COJUNCTION` types to represent terms in AND conjunctions of equalities. `COLUMN` is provided as an abstract variable type representing a table column.
 
-`table.column=x` is parsed into a structured list of the form `((:eq "table.column" "x"))`.
+A `COALESCE(X,Y)` operator is provided to combine terms _X_ and _Y_, which can be instances of any of the aforementioned term types.
 
-Subtyping clauses are also supported as a special case. `table[type=t].column=x` is parsed into `((:eq "table.column" "x") (:strict-eq "table.type" "t"))`.
+### FQL
 
-### xfiltertree
+_Uses EQVALG._
 
-Defines the classes `node` and `aggregation` where _aggregation extends node_.
+Parser & grammar definition for a simple equivalency expression language. `(FQL:PARSE-FILTER (STRING))` parses _STRING_ into an _EQVALG_ term object.
 
-Each node has a string _name_ and a list of _children_ nodes.
+`table.column=x` is parsed into an `EQVALG:EQUALITY` object.
 
-An aggregation node additional has an associative list _bin_ which associates bin specification string to _fql_ filter strings.
+Subtyping clauses are also supported as a special case. `table[type=t].column=x` is parsed into `(EQVALG:CONJUNCTION (EQVALG:EQUALITY (EQVALG:COLUMN table type) t) (EQVALG:EQUALITY (EQVALG:COLUMN table column) x))`.
 
-### xfiltertree-html
+### XFILTERTREE
 
-_Uses xfiltertree, fql, webstr_.
+Defines the classes `NODE` and `AGGREGATION` where _AGGREGATION extends NODE_.
 
-#### Clause Processing
+Each _NODE_ has an _ID_ and a list of _CHILDREN_ nodes.
 
-A clause is a list of pairs of the form `((filter . bin) …)` where _filter_ is a _fql_ filter string and _bin_ is an opaque bin designator. The HTML form values are received by the server as such pairs.
+An aggregation has an additional associative list _BINS_ which is a list of the form `((BIN-ID (AGG-1) (AGG-2) …) …)`. Note that the _CDR_ of `(AGG-N)` is mutable by convention and may be set by processing functions to the aggregation count.
 
-`(xfiltertree-html:parse-filter-clauses clauses)` parses `((filter . bin) …)` (where _filter_ is unescaped) into structured lists using `fql:parse-filter`.
+A `DYNAMIC` node extends `AGGREGATION` with _QUERIER_ and _SEARCHER_ properties, which are conventionally set to URIs that implement aggregation querying and DWIM searching for the dynamic node's resource types.
 
-The resulting structured list is converted into a hierarchical tree of the form `((column (bin (operator arg0 arg1 …) …) …) …)` using `(xfiltertree-html:sort-filter-clauses structured-clauses)`.
+### XFILTERTREE-EQVALG
 
-#### Form Generation
+_Uses XFILTERTREE, EQVALG._
 
-`(xfiltertree-html:htmlize node)` returns a string containing a htmx-enabled hypermedia HTML form given a `xfiltertree:node` instance.
+Provides `(XFILTERTREE-EQVALG:CONSTRAIN (TREE CONSTRAINTS)` that mutates _TREE_ by coalescing all its _XFILTERTREE:AGGREGATION_ nodes' aggregation predicates with the given constraints.
 
-`xfiltertree:aggregation` nodes are transformed into `<fieldset>` nodes containing checkbox inputs, allowing for selection of aggregation bin. One checkbox input is generated for each bin. The `name=…` attribute is set to be equivalent to the _webstr:escape_-ed bin _fql_ filter string, and the `value=…` attribute is set to the bin specification string.
+Provides `(XFILTERTEE-EQVALG:EXTEND (TREE DYNAMIC))` that mutates _TREE_ by extending each _XFILTERTREE:DYNAMIC_ node within the _TREE_ with aggregation clauses from _DYNAMIC_ that are deemed _compatible_ with it. A _compatible_ aggregation clause has a subject table that matches the _DYNAMIC_ node's ID.
 
-`xfiltertree-html:*form-post*` should be bound to the form submission POST endpoint, and defaults to `/`.
+### XFILTERTREE-HTML
 
-If `xfiltertree-html:*form-update*` is bound to _t_ (or any true value), `xfiltertree-html:htmlize` will generate a DOM update payload, where tags may have an additional `hx-oob-swap` property facilitating htmx-driven updates of bin counts with minimal rerendering.
+_Uses XFILTERTREE, WEBSTR._
 
-### xfiltertree-bom
+HTML/Hypermedia rendering system for _XFILTERTREE_ trees.
 
-Defines factories for creating `xfiltertree` nodes.
+`(XFILTERTREE-HTML:HTMLIZE (NODE))` returns a string containing a htmx-enabled hypermedia HTML form given a `XFILTERTREE:NODE` instance.
 
-`(xfiltertree-bom:consume-aggregation-tree consume)` is a pull-style function which calls _consume_ without arguments for every required aggregation count.
+`XFILTERTREE-HTML:*TRANSLATE*` is a dynamic parameter used to stringify _NODE_ IDs and aggregation bin IDs into a string representation. This is used to facilitate conversion of custom ID types. This defaults to `#'IDENTITY` if not otherwise bound.
 
-### xfiltertree-sql
+`XFILTERTREE:AGGREGATION` nodes are transformed into `<fieldset>` nodes containing checkbox inputs, allowing for selection of aggregation bin. One checkbox input is generated for each bin. The `value=…` HTML attribute is set to be equivalent to the _WEBSTR:ESCAPE_-ed `*TRANSLATE*`-transformed bin ID, and the HTML `name=…` attribute is set to `clause`.
 
-_Uses xfiltertree-bom_.
+`XFILTERTREE-HTML:*FORM-POST*` should be bound to the form submission POST endpoint, and defaults to `/` if not bound otherwise.
 
-Generates a filter node tree from a _sqlite3_ database using `xfiltertree-bom`.
+If `XFILTERTREE-HTML:*FORM-UPDATE*` is bound to _T_ (or any generalized true value), `XFILTERTREE-HTML:HTMLIZE` will generate a DOM update payload, where tags may have an additional `hx-oob-swap` property facilitating htmx-driven updates of bin counts with minimal rerendering.
 
-Provides `(xfiltertree-sql:query-aggregation-tree hier-clauses)` where _hier-clauses_ is a hierarchical clause tree as produced by `xfiltertree-html:sort-filter-clauses`.
+### XFILTERTREE-BOM
 
-`xfiltertree-sql:*db*` should be bound to the sqlite3 database file (this defaults to `db.sqlite3`).
+_Uses XFILTERTREE, EQVALG._
 
-### xfiltertree-server
+Defines factories for creating `XFILTERTREE` nodes.
 
-_Uses xfiltertree-html, xfiltertree-sql_.
+`XFILTERTREE:MAKE-TREE` is a factory that generates a predefined filter tree.
 
-Integrates the systems _xfiltertree-html_, _xfiltertree-sql_ and _hunchentoot_ to provide a filter tree server.
+### XFILTERTREE-SQL
 
-`xfiltertree-server:*acceptor*` is the hunchentoot acceptor, with all routes defined. By default, it's configured to listen on _localhost:8080_.
+_Uses XFILTERTREE, EQVALG-SQL._
 
-The server may be interactively started with `(hunchentoot:start xfiltertree-server:*acceptor*)`, and stopped with `(hunchentoot:stop xfiltertree-server:*acceptor*)`.
+Generates a filter node tree from a _sqlite3_ database using `EQVALG-SQL`.
+
+Provides `(XFILTERTREE:COMPUTE-AGGREGATIONS (TREE))` which mutates the _CDR_ of aggregation pairs in all _AGGREGATION_ nodes in tree, setting the aggregation count for each bin by querying an SQL database.
+
+`XFILTERTREE-SQL:*DB*` should be bound to the sqlite3 database file (this defaults to `db.sqlite3`).
+
+### XFILTERTREE-SERVER
+
+_Uses FQL, XFILTERTREE-EQVALG, XFILTERTREE-BOM, XFILTERTREE-HTML, XFILTERTREE-SQL._
+
+Integrates the systems _XFILTERTREE-HTML_, _XFILTERTREE-SQL_ and _HUNCHENTOOT_ to provide a filter tree server.
+
+`XFILTERTREE-SERVER:*ACCEPTOR*` is the hunchentoot acceptor, with all routes defined. By default, it's configured to listen on _localhost:8080_.
+
+The server may be interactively started with `(HUNCHENTOOT:START XFILTERTREE-SERVER:*ACCEPTOR*)`, and stopped with `(HUNCHENTOOT:STOP XFILTERTREE-SERVER:*ACCEPTOR*)`.
 
