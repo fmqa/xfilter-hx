@@ -64,6 +64,6 @@
                     :initial-value obj))
   ;; Construct SQL selection statement from comma-delimited table names in the FROM
   ;; clause, and the stringified aggregation filter in the WHERE clause
-  (format nil "SELECT COUNT(*) FROM ~{~A~^, ~} WHERE ~A"
+  (format nil "SELECT COUNT(*) FROM ~{`~A`~^, ~} WHERE ~A"
           (remove-duplicates (subject-tables (eqvalg:subject obj)) :test #'equal)
           (sqlize obj)))
