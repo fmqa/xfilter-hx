@@ -10,7 +10,12 @@
           (destructuring-bind (id uri) row
             (declare (ignore id))
             (cl-who:with-html-output-to-string (s)
-              (:option :value (cl-who:escape-string uri)))))
+              (:option
+               :value (cl-who:escape-string uri)
+               :data-key (cl-who:escape-string
+                          (fql:stringify
+                           (eqvalg:equality-of
+                            (eqvalg:column-of "endpoint" "uri") uri)))))))
         result)))))
 
 (defun endpoint-filter-html (key clauses)

@@ -82,6 +82,7 @@
       (:fieldset
        :id (format nil "fieldset--~A" escaped)
        :data-leaf "true"
+       :data-key (cl-who:escape-string name)
        (:legend :data-i18n "" (cl-who:str name))
        (:input :type "hidden" :name "dynamic"
                :value (cl-who:escape-string clause))
@@ -136,7 +137,7 @@
     (push (cl-who:with-html-output-to-string (s)
             (:form :id form :hx-post (xfiltertree:dynamic-searcher node)
                    :onsubmit "return false;"
-                   :hx-target "next"
+                   :hx-target "next datalist"
                    :hx-trigger (format nil "input changed from:#~A, ~
                                             focus once from:#~A, ~
                                             focus changed from:#~A"

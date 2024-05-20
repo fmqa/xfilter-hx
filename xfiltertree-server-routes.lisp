@@ -16,7 +16,7 @@
   (allow-methods
    '(:HEAD :GET :POST)
    (lambda ()
-     (no-content-unless (endpoint-search-html q)))))
+     (endpoint-search-html q))))
 
 (hunchentoot:define-easy-handler (endpoint-query-route :uri "/endpoints/query")
     ((key :real-name "q")
