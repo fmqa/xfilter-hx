@@ -4,8 +4,173 @@
     <title>Hypermedia Filter Demo</title>
   </head>
   <body>
-    <div hx-get="/fnt" hx-swap="outerHTML" hx-trigger="load"></div>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.5"></script>
+    <script>
+      progressiveEnhancePopAttribute = (elt, name) => {
+          const value = elt.getAttribute(name);
+          elt.removeAttribute(name);
+          return value;
+      };
+      
+      progressiveEnhanceCreateChoicePopper = (input) => {
+          const choices = document.createElement("div");
+          const tooltip = document.createElement("div");
+          const arrowElement = document.createElement("div");
+          
+          arrowElement.classList.add("pe-tooltip--arrow");
+          tooltip.setAttribute("role", "tooltip");
+          tooltip.classList.add("pe-tooltip");
+          input.after(tooltip);
+          tooltip.append(arrowElement);
+          tooltip.append(choices);
+
+          const { computePosition, flip, shift, offset, arrow } = window.FloatingUIDOM;
+
+          const update = () => {
+              computePosition(input, tooltip, {
+                  placement: 'bottom',
+                  middleware: [
+                      offset(6),
+                      flip(),
+                      shift({padding: 5}),
+                      arrow({element: arrowElement}),
+                  ],
+              }).then(({x, y, placement, middlewareData}) => {
+                  Object.assign(tooltip.style, {
+                      left: `${x}px`,
+                      top: `${y}px`,
+                  });
+                  
+                  // Accessing the data
+                  const {x: arrowX, y: arrowY} = middlewareData.arrow;
+                  
+                  const staticSide = {
+                      top: 'bottom',
+                      right: 'left',
+                      bottom: 'top',
+                      left: 'right',
+                  }[placement.split('-')[0]];
+                  
+                  Object.assign(arrowElement.style, {
+                      left: arrowX != null ? `${arrowX}px` : '',
+                      top: arrowY != null ? `${arrowY}px` : '',
+                      right: '',
+                      bottom: '',
+                      [staticSide]: '-4px',
+                  });
+              });
+          };
+
+          const hideTooltip = () => {
+              tooltip.style.display = "";
+              document.body.removeEventListener("mousedown", hideIfNotInTooltip);
+              document.body.removeEventListener("focusin", hideIfNotInTooltip);
+          };
+          
+          const hideIfNotInTooltip = (evt) => tooltip.contains(evt.target) || hideTooltip();
+
+          const styleChoices = () => {
+              const added = new Set();
+              for (const keyed of tooltip.parentElement.querySelectorAll(".pe-tooltip ~ [data-key]")) {
+                  added.add(keyed.dataset.key);
+              }
+              for (const choice of choices.children) {
+                  if (added.has(choice.dataset.key)) {
+                      choice.classList.add("pe-tooltip--chosen");
+                  } else {
+                      choice.classList.remove("pe-tooltip--chosen");
+                  }
+              }
+          }
+          
+          const showTooltip = () => {
+              if (choices.childElementCount <= 0) {
+                  return;
+              }
+              styleChoices();
+              tooltip.style.display = "block";
+              update();
+              setTimeout(() => {
+                  document.body.addEventListener("mousedown", hideIfNotInTooltip);
+                  document.body.addEventListener("focusin", hideIfNotInTooltip);
+              }, 0);
+          };
+
+          input.addEventListener("keydown", (evt) => {
+              if (evt.key === "Escape") {
+                  hideTooltip();
+                  return;
+              }
+              if (evt.key === "ArrowUp" || evt.key === "ArrowDown") {
+                  showTooltip();
+              }
+              let selected = choices.querySelector(".pe-item--selected");
+              if (!selected && choices.firstElementChild) {
+                  choices.firstElementChild.classList.add("pe-item--selected");
+                  return;
+              }
+              if (evt.key === "Enter") {
+                  if (selected.textContent === input.value) {
+                      input.dispatchEvent(new CustomEvent("pe:search:accept", { bubbles: true }));
+                      return;
+                  }
+                  selected.click();
+              }
+              selected.classList.remove("pe-item--selected");
+              if (evt.key === "ArrowDown") {
+                  selected = selected.nextElementSibling;
+              } else if (evt.key === "ArrowUp") {
+                  selected = selected.previousElementSibling;
+              }
+              if (!selected) {
+                  selected = evt.key === "ArrowDown" ? choices.firstElementChild : choices.lastElementChild;
+              }
+              selected.classList.add("pe-item--selected");
+              selected.focus();
+          });
+
+          return { showTooltip, hideTooltip, choices };
+      };
+      progressiveEnhanceSearchInput = (elt) => {
+          let list = progressiveEnhancePopAttribute(elt, "list");
+          if (!list) {
+              return;
+          }
+          list = document.getElementById(list);
+          if (!list) {
+              return;
+          }
+          const { showTooltip, hideTooltip, choices } = progressiveEnhanceCreateChoicePopper(elt);
+          list.addEventListener("htmx:after-swap", () => {
+              if (list.childElementCount <= 0) {
+                  hideTooltip();
+              }
+              const elements = [];
+              for (const child of list.children) {
+                  const div = document.createElement("div");
+                  div.classList.add("pe-tooltip--item");
+                  div.dataset.key = child.dataset.key;
+                  div.onclick = () => {
+                      elt.value = div.textContent;
+                      hideTooltip();
+                  };
+                  div.textContent = child.value;
+                  elements.push(div);
+              }
+              choices.replaceChildren(...elements);
+              showTooltip();
+          });
+          elt.addEventListener("focus", showTooltip);
+      };
+      configure = (elt) => {
+          progressiveEnhanceSearchInput(elt.querySelector("#search--endpoint_2E_uri"));
+          elt.querySelector("[data-name='endpoint.uri'] button").setAttribute("hx-trigger", "click, pe:search:accept from:previous input");
+          htmx.process(elt.querySelector("[data-name='endpoint.uri'] button"));
+      };
+    </script>
+    <div hx-get="/fnt" hx-trigger="load" hx-on:htmx:after-swap="event.target === this && configure(this)"></div>
     <style>
       body {
           font-family: sans;
@@ -32,6 +197,42 @@
       }
       fieldset[data-leaf] > legend {
           display: contents;
+      }
+      .pe-tooltip {
+          box-sizing: border-box;
+          display: none;
+          width: max-content;
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: #222;
+          color: white;
+          font-weight: bold;
+          padding: 5px;
+          border-radius: 4px;
+          font-size: 90%;
+          overflow: auto;
+      }
+      .pe-tooltip--arrow {
+          position: absolute;
+          background: #222;
+          width: 8px;
+          height: 8px;
+          transform: rotate(45deg);
+      }
+      .pe-tooltip--item {
+          cursor: pointer;
+      }
+      .pe-tooltip--chosen {
+          color: lightblue;
+      }
+      .pe-item--selected {
+          border: 1px solid lightblue;
+          border-radius: 3px;
+      }
+      .pe-tooltip--item:hover, .pe-tooltip--item:focus, .pe-tooltip--item:active {
+          border: 1px solid white;
+          border-radius: 3px;
       }
     </style>
   </body>

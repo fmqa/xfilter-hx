@@ -147,7 +147,9 @@
     (cl-who:with-html-output-to-string (s)
       (:div
        (:input :id id :name "q" :form form :type "search" :list data :|hx-on:change| "event.stopPropagation();")
-       (:button :hx-post (xfiltertree:dynamic-querier node)
+       (:button :type "button"
+                :hx-post (xfiltertree:dynamic-querier node)
+                :hx-trigger "click"
                 :hx-include "previous input"
                 :hx-swap "afterend"
                 "+")
