@@ -1,17 +1,21 @@
 (in-package :xfiltertree-server)
 
 (defun endpoint-search-html (needle)
-  (uiop:reduce/strcat
-   (mapcar
-    (lambda (row)
-      (destructuring-bind (id uri) row
-        (declare (ignore id))
-        (cl-who:with-html-output-to-string (s)
-          (:option :value (cl-who:escape-string uri)))))
-    (xfiltertree-sql:endpoint-search needle))))
+  (let ((result (let ((sql-db:*intercept* #'log-sql))
+                  (endpoints-sql:endpoint-search needle))))
+    (when result
+      (uiop:reduce/strcat
+       (mapcar
+        (lambda (row)
+          (destructuring-bind (id uri) row
+            (declare (ignore id))
+            (cl-who:with-html-output-to-string (s)
+              (:option :value (cl-who:escape-string uri)))))
+        result)))))
 
 (defun endpoint-filter-html (key clauses)
-  (let ((endpoint (xfiltertree-sql:endpoint-by-uri key)))
+  (let ((endpoint (let ((sql-db:*intercept* #'log-sql))
+                    (endpoints-sql:endpoint-by-uri key))))
     (when endpoint
       (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") key))
              (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))

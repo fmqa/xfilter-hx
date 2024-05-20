@@ -17,6 +17,11 @@
   (destructuring-bind (filter &rest options) (fql:parse-filter-with-options clause)
     (cons filter (list (cdr (assoc "bin" options :test #'equal))))))
 
+(defun no-content-unless (value)
+  (or value
+      (progn (setf (hunchentoot:return-code*) hunchentoot:+HTTP-NO-CONTENT+)
+             value)))
+
 (hunchentoot:define-easy-handler (fnt-route :uri "/fnt")
     ((clause :parameter-type 'list)
      (update :parameter-type 'boolean)
@@ -33,7 +38,7 @@
   (allow-methods
    '(:HEAD :GET :POST)
    (lambda ()
-     (endpoint-search-html q))))
+     (no-content-unless (endpoint-search-html q)))))
 
 (hunchentoot:define-easy-handler (endpoint-query-route :uri "/endpoints/query")
     ((key :real-name "q")
