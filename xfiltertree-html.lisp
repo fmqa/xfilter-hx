@@ -83,13 +83,6 @@
        :id (format nil "fieldset--~A" escaped)
        :data-leaf "true"
        :data-key (cl-who:escape-string name)
-       (:legend :data-i18n "" (cl-who:str name))
-       (:input :type "hidden" :name "dynamic"
-               :value (cl-who:escape-string clause))
-       (cl-who:str
-        (uiop:reduce/strcat
-         (mapcar (make-aggregation-bin-htmlizer name)
-                 bins)))
        (:button
         :type "button"
         ;; Remove this fieldset in addition to any OOB settings
@@ -108,7 +101,14 @@
                            htmx.remove('#fieldset--~A');~
                          })(htmx.closest(this, '[hx-select-oob]'),~
                              '#fieldset--~A')" escaped escaped))
-        "x")
+        "&#10006;")
+       (:legend :data-i18n "" (cl-who:str name))
+       (:input :type "hidden" :name "dynamic"
+               :value (cl-who:escape-string clause))
+       (cl-who:str
+        (uiop:reduce/strcat
+         (mapcar (make-aggregation-bin-htmlizer name)
+                 bins)))
        ;; Enable OOB swapping for this element to avoid adding duplicates.
        (:script
         (cl-who:str
@@ -152,5 +152,5 @@
                 :hx-trigger "click"
                 :hx-include "previous input"
                 :hx-swap "afterend"
-                "+")
+                "&#10010;")
        (cl-who:str (htmlize-dynamic-bins node))))))

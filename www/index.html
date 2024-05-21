@@ -13,12 +13,12 @@
           elt.removeAttribute(name);
           return value;
       };
-      
+
       progressiveEnhanceCreateChoicePopper = (input) => {
           const choices = document.createElement("div");
           const tooltip = document.createElement("div");
           const arrowElement = document.createElement("div");
-          
+
           arrowElement.classList.add("pe-tooltip--arrow");
           tooltip.setAttribute("role", "tooltip");
           tooltip.classList.add("pe-tooltip");
@@ -42,17 +42,17 @@
                       left: `${x}px`,
                       top: `${y}px`,
                   });
-                  
+
                   // Accessing the data
                   const {x: arrowX, y: arrowY} = middlewareData.arrow;
-                  
+
                   const staticSide = {
                       top: 'bottom',
                       right: 'left',
                       bottom: 'top',
                       left: 'right',
                   }[placement.split('-')[0]];
-                  
+
                   Object.assign(arrowElement.style, {
                       left: arrowX != null ? `${arrowX}px` : '',
                       top: arrowY != null ? `${arrowY}px` : '',
@@ -68,14 +68,18 @@
               document.body.removeEventListener("mousedown", hideIfNotInTooltip);
               document.body.removeEventListener("focusin", hideIfNotInTooltip);
           };
-          
+
           const hideIfNotInTooltip = (evt) => tooltip.contains(evt.target) || hideTooltip();
 
+          const addedChoiceKeys = () => {
+              const keys = new Set();
+              const elts = tooltip.parentElement.querySelectorAll(".pe-tooltip ~ [data-key]");
+              elts.forEach((elt) => keys.add(elt.dataset.key));
+              return keys;
+          };
+
           const styleChoices = () => {
-              const added = new Set();
-              for (const keyed of tooltip.parentElement.querySelectorAll(".pe-tooltip ~ [data-key]")) {
-                  added.add(keyed.dataset.key);
-              }
+              const added = addedChoiceKeys();
               for (const choice of choices.children) {
                   if (added.has(choice.dataset.key)) {
                       choice.classList.add("pe-tooltip--chosen");
@@ -84,7 +88,7 @@
                   }
               }
           }
-          
+
           const showTooltip = () => {
               if (choices.childElementCount <= 0) {
                   return;
@@ -163,6 +167,7 @@
               showTooltip();
           });
           elt.addEventListener("focus", showTooltip);
+          elt.setAttribute("placeholder", "\u2315");
       };
       configure = (elt) => {
           progressiveEnhanceSearchInput(elt.querySelector("#search--endpoint_2E_uri"));
@@ -174,6 +179,7 @@
     <style>
       body {
           font-family: sans;
+          box-sizing: border-box;
       }
       form {
           width: max-content;
@@ -185,15 +191,25 @@
           display: none;
       }
       input[type=checkbox] + label {
-          border: 1px solid cornflowerblue;
+          border: 1px solid #1979ca;
           border-radius: 3px;
           margin: 0.5em;
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+          padding: 1px;
       }
       input[type=checkbox]:checked + label {
-          background-color: lightblue;
+          background-color: #85cee1;
       }
       fieldset[data-leaf] {
+          padding: 0;
+          padding-left: 0.5rem;
           border: none;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          > * { margin-right: 0.5rem; }
       }
       fieldset[data-leaf] > legend {
           display: contents;
@@ -205,34 +221,69 @@
           position: absolute;
           top: 0;
           left: 0;
-          background: #222;
-          color: white;
-          font-weight: bold;
+          background: #85cee1;
+          color: #335ea8;
           padding: 5px;
           border-radius: 4px;
           font-size: 90%;
           overflow: auto;
+          border: 1px solid #1979ca;
       }
       .pe-tooltip--arrow {
           position: absolute;
-          background: #222;
+          background: white;
           width: 8px;
           height: 8px;
           transform: rotate(45deg);
       }
       .pe-tooltip--item {
           cursor: pointer;
+          margin: 1px;
+          padding: 1px;
+          border: 1px solid transparent;
       }
       .pe-tooltip--chosen {
-          color: lightblue;
+          background: #335ea8;
+          color: #85cee1;
+          border-radius: 4px;
       }
       .pe-item--selected {
-          border: 1px solid lightblue;
+          border: 1px solid #335ea8;
           border-radius: 3px;
       }
       .pe-tooltip--item:hover, .pe-tooltip--item:focus, .pe-tooltip--item:active {
-          border: 1px solid white;
+          border: 1px solid #335ea8;
           border-radius: 3px;
+      }
+      [data-name='endpoint.uri'] {
+          div {
+              > input::placeholder {
+                  text-align: right;
+              }
+              > input, button {
+                  margin: 4px;
+              }
+              > button {
+                  border: none;
+                  color: #335ea8;
+                  background: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+              }
+          }
+          [data-leaf] {
+              display: grid;
+              grid-template-columns: auto 1fr auto;
+              padding-left: 0;
+              button {
+                  border: none;
+                  background: none;
+                  color: #d24231;
+                  cursor: pointer;
+                  width: 1rem;
+                  height: 1rem;
+              }
+          }
       }
     </style>
   </body>
