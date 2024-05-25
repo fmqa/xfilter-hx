@@ -37,8 +37,11 @@
    #:membership-of
    #:conjunction-from
    #:conjunction-of
+   ;; PREDICATES
+   #:term-p
    ;; QUERIES
    #:subject
+   #:table-names
    ;; TRANSFORMS
    #:coalesce))
 (in-package :eqvalg)
@@ -50,6 +53,11 @@
 (defstruct membership operand collection)
 
 (defstruct conjunction operands)
+
+(defun term-p (term)
+  (or (equality-p term)
+      (membership-p term)
+      (conjunction-p term)))
 
 (defun column-of (table name)
   (make-column :table table :name name))
@@ -81,7 +89,11 @@
   (:documentation "Retrieves the subject column of TERM"))
 
 (defmethod subject ((term equality))
-  (cond ((column-p (equality-left term)) (values (equality-left term)
+  (cond ((and (column-p (equality-left term)) (column-p (equality-right term)))
+         (if (equalp (equality-left term) (equality-right term))
+             (equality-left term)
+             (list (equality-left term) (equality-right term))))
+        ((column-p (equality-left term)) (values (equality-left term)
                                                  (equality-right term)))
         ((column-p (equality-right term)) (values (equality-right term)
                                                   (equality-left term)))))
@@ -94,9 +106,17 @@
   (loop with cols = nil
         for operand in (conjunction-operands term)
         for col = (subject operand)
-        do (when (and (column-p col) (not (member col cols :test #'equalp)))
-             (push col cols))
+        do (if (column-p col)
+               (unless (member col cols :test #'equalp)
+                 (push col cols))
+               (unless (subsetp col cols :test #'equalp)
+                 (setf cols (append col cols))))
         finally (return cols)))
+
+(defun table-names (term)
+  (cond ((column-p term) (list (column-table term)))
+        ((term-p term) (table-names (subject term)))
+        (t (remove-duplicates (mapcan #'table-names term) :test #'equalp))))
 
 (defmethod coalesce ((left equality) (right equality))
   (multiple-value-bind (left-subject left-target) (subject left)

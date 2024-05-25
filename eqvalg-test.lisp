@@ -7,13 +7,17 @@
 (def-suite* subjects :in eqvalg)
 
 (test equality-subject-of-column
-  (let ((column (eqvalg:column-of "table" "column")))
+  (let ((column (eqvalg:column-of "table" "column"))
+        (otherc (eqvalg:column-of "abc" "def")))
     ;; Returns the left side of the equality if it is a column
     (is (equalp column
                 (eqvalg:subject (eqvalg:equality-of column 12))))
     ;; Returns the right side of the equality if it is a column
     (is (equalp column
-        (eqvalg:subject (eqvalg:equality-of 12 column))))))
+                (eqvalg:subject (eqvalg:equality-of 12 column))))
+    ;; Returns both sides of the equality if they are both columns
+    (is (equalp (list column otherc)
+                (eqvalg:subject (eqvalg:equality-of column otherc))))))
 
 (test equality-subject-no-columns
   ;; Returns nil if no columns are in the equality
@@ -46,6 +50,35 @@
     (is (equalp (list column-a)
                 (eqvalg:subject (eqvalg:conjunction-of (eqvalg:equality-of column-a "x")
                                                        (eqvalg:equality-of "y" column-a)))))))
+
+(test table-names
+  (is (equal (list "table")
+             (eqvalg:table-names (eqvalg:column-of "table" "column"))))
+  (is (equal (list "taba" "tabb")
+             (eqvalg:table-names (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
+                                                     (eqvalg:column-of "tabb" "colb")))))
+  (is (equal (list "taba" "tabb")
+             (eqvalg:table-names (eqvalg:conjunction-of
+                                  (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
+                                                      (eqvalg:column-of "tabb" "colb"))))))
+  (is (equal (list "tabc" "taba" "tabb")
+             (eqvalg:table-names (eqvalg:conjunction-of
+                                  (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
+                                                      (eqvalg:column-of "tabb" "colb"))
+                                  (eqvalg:equality-of (eqvalg:column-of "tabc" "def")
+                                                      "value")))))
+  (is (equal (list "tabc" "tabd" "taba" "tabb")
+             (eqvalg:table-names (eqvalg:conjunction-of
+                                  (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
+                                                      (eqvalg:column-of "tabb" "colb"))
+                                  (eqvalg:equality-of (eqvalg:column-of "tabc" "def")
+                                                      (eqvalg:column-of "tabd" "xxx"))))))
+  (is (equal (list "taba" "tabb")
+             (eqvalg:table-names (eqvalg:conjunction-of
+                                  (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
+                                                      (eqvalg:column-of "tabb" "colb"))
+                                  (eqvalg:equality-of (eqvalg:column-of "taba" "yyy")
+                                                      (eqvalg:column-of "tabb" "xxx")))))))
 
 (def-suite* coalescing :in eqvalg)
 
