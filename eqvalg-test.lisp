@@ -57,6 +57,9 @@
   (is (equal (list "taba" "tabb")
              (eqvalg:table-names (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
                                                      (eqvalg:column-of "tabb" "colb")))))
+  (is (equal (list "table")
+             (eqvalg:table-names (eqvalg:membership-of (eqvalg:column-of "table" "column")
+                                                       '(1 2)))))
   (is (equal (list "taba" "tabb")
              (eqvalg:table-names (eqvalg:conjunction-of
                                   (eqvalg:equality-of (eqvalg:column-of "taba" "cola")
