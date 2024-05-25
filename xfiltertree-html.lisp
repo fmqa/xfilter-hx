@@ -102,7 +102,7 @@
                          })(htmx.closest(this, '[hx-select-oob]'),~
                              '#fieldset--~A')" escaped escaped))
         "&#10006;")
-       (:legend :data-i18n "" (cl-who:str name))
+       (:legend (cl-who:str name))
        (:input :type "hidden" :name "dynamic"
                :value (cl-who:escape-string clause))
        (cl-who:str
