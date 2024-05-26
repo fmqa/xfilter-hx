@@ -59,6 +59,14 @@
       (membership-p term)
       (conjunction-p term)))
 
+(defun column-equality-p (eqlt)
+  (and (column-p (equality-left eqlt))
+       (column-p (equality-right eqlt))))
+
+(defun tautological-equality-p (eqlt)
+  (equalp (equality-left eqlt)
+          (equality-right eqlt)))
+
 (defun column-of (table name)
   (make-column :table table :name name))
 
@@ -89,8 +97,8 @@
   (:documentation "Retrieves the subject column of TERM"))
 
 (defmethod subject ((term equality))
-  (cond ((and (column-p (equality-left term)) (column-p (equality-right term)))
-         (if (equalp (equality-left term) (equality-right term))
+  (cond ((column-equality-p term)
+         (if (tautological-equality-p term)
              (equality-left term)
              (list (equality-left term) (equality-right term))))
         ((column-p (equality-left term)) (values (equality-left term)
