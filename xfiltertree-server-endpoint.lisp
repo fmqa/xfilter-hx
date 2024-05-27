@@ -1,7 +1,7 @@
 (in-package :xfiltertree-server)
 
 (defun endpoint-search-html (needle)
-  (let ((result (let ((sql-db:*intercept* #'log-sql))
+  (let ((result (let ((sql-db:*pre-query-hook* #'log-sql))
                   (endpoints-sql:endpoint-search needle))))
     (when result
       (uiop:reduce/strcat
@@ -19,7 +19,7 @@
         result)))))
 
 (defun endpoint-filter-html (key clauses)
-  (let ((endpoint (let ((sql-db:*intercept* #'log-sql))
+  (let ((endpoint (let ((sql-db:*pre-query-hook* #'log-sql))
                     (endpoints-sql:endpoint-by-uri key))))
     (when endpoint
       (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") key))

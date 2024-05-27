@@ -1,7 +1,7 @@
 (defpackage sql-db
   (:use :cl)
   (:export
-   #:*intercept*
+   #:*pre-query-hook*
    #:call-with-db
    #:execute-one-row-m-v
    #:execute-to-list))
@@ -9,19 +9,20 @@
 
 (defparameter *db* "db.sqlite3")
 
-(defparameter *intercept* nil "Query interception callback")
+(defparameter *pre-query-hook* nil "Pre-query hook")
 
-(defun run-hook (sql parameters)
-  (when *intercept* (funcall *intercept* sql parameters)))
+(defun run-pre-query-hook (sql parameters)
+  (when *pre-query-hook*
+    (funcall *pre-query-hook* sql parameters)))
 
 (defun call-with-db (f &rest arguments)
   (sqlite:with-open-database (db *db*)
     (let ((*db* db)) (apply f arguments))))
 
 (defun execute-one-row-m-v (sql &rest parameters)
-  (run-hook sql parameters)
+  (run-pre-query-hook sql parameters)
   (apply #'sqlite:execute-one-row-m-v *db* sql parameters))
 
 (defun execute-to-list (sql &rest parameters)
-  (run-hook sql parameters)
+  (run-pre-query-hook sql parameters)
   (apply #'sqlite:execute-to-list *db* sql parameters))
