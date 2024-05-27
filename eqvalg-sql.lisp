@@ -56,10 +56,10 @@
 (defun sqlize-aggregation (obj)
   ;; Fuse the aggregation filter with the joining predicates
   (setf obj (reduce #'eqvalg:coalesce
-                    (join-tables (eqvalg:table-names (eqvalg:subject obj)))
+                    (join-tables (eqvalg:table-names obj))
                     :initial-value obj))
   ;; Construct SQL selection statement from comma-delimited table names in the FROM
   ;; clause, and the stringified aggregation filter in the WHERE clause
   (format nil "SELECT COUNT(*) FROM ~{`~A`~^, ~} WHERE ~A"
-          (eqvalg:table-names (eqvalg:subject obj))
+          (eqvalg:table-names obj)
           (sqlize obj)))
