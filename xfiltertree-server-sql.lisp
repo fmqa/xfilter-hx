@@ -19,6 +19,10 @@
    (sqlite:with-open-database (db *db*)
      (apply #'sqlite:execute-one-row-m-v db statement parameters))))
 
+(defun compute-aggregations (tree)
+  (let ((eqvalg-sql:*join* *default-join*))
+    (xfiltertree-sql:compute-aggregations tree #'sql-query)))
+
 (defun sql-query-multi (statement &rest parameters)
   (sql-log statement parameters)
   (sqlite:with-open-database (db *db*)

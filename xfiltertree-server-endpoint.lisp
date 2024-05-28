@@ -22,9 +22,8 @@
     (when endpoint
       (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") key))
              (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))
-        (xfiltertree-sql:compute-aggregations
+        (compute-aggregations
          (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
-                                       (mapcar #'car clauses))
-         #'sql-query)
+                                       (mapcar #'car clauses)))
         (let ((xfiltertree-html:*translate* #'fql:stringify))
           (xfiltertree-html:htmlize-dynamic-bins tree))))))

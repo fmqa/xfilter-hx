@@ -151,6 +151,8 @@
                 :hx-post (xfiltertree:dynamic-querier node)
                 :hx-trigger "click"
                 :hx-include "previous input"
-                :hx-swap "afterend"
-                "&#10010;")
-       (cl-who:str (htmlize-dynamic-bins node))))))
+                :hx-target "next div"
+                :hx-swap "afterbegin"
+                "&#10010;"))
+       (:div
+        (cl-who:str (htmlize-dynamic-bins node))))))
