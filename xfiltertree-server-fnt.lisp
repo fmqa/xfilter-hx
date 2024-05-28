@@ -1,11 +1,10 @@
 (in-package :xfiltertree-server)
 
 (defun filter-navigation-tree-set-aggregations (tree clauses)
-  (let ((eqvalg-sql:*join* *default-join*)
-        (sql-db:*pre-query-hook* #'log-sql))
-    (xfiltertree-sql:compute-aggregations
-     (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
-                                   (mapcar #'car clauses)))))
+  (xfiltertree-sql:compute-aggregations
+   (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
+                                 (mapcar #'car clauses))
+   #'sql-query))
 
 (defun filter-navigation-tree-html (clauses &key update dynamic)
   (let ((tree (xfiltertree-eqvalg:extend (xfiltertree-bom:make-tree) dynamic)))

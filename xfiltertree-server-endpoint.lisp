@@ -1,8 +1,7 @@
 (in-package :xfiltertree-server)
 
 (defun endpoint-search-html (needle)
-  (let ((result (let ((sql-db:*pre-query-hook* #'log-sql))
-                  (endpoints-sql:endpoint-search needle))))
+  (let ((result (endpoints-sql:endpoint-search #'sql-query-multi needle)))
     (when result
       (uiop:reduce/strcat
        (mapcar
@@ -19,14 +18,13 @@
         result)))))
 
 (defun endpoint-filter-html (key clauses)
-  (let ((endpoint (let ((sql-db:*pre-query-hook* #'log-sql))
-                    (endpoints-sql:endpoint-by-uri key))))
+  (let ((endpoint (endpoints-sql:endpoint-by-uri #'sql-query key)))
     (when endpoint
       (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") key))
              (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))
-        (let ((eqvalg-sql:*join* *default-join*))
-          (xfiltertree-sql:compute-aggregations
-           (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
-                                         (mapcar #'car clauses))))
+        (xfiltertree-sql:compute-aggregations
+         (xfiltertree-eqvalg:constrain (xfiltertree:copy-node tree)
+                                       (mapcar #'car clauses))
+         #'sql-query)
         (let ((xfiltertree-html:*translate* #'fql:stringify))
           (xfiltertree-html:htmlize-dynamic-bins tree))))))
