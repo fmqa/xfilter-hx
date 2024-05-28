@@ -65,15 +65,15 @@
 
           const hideTooltip = () => {
               tooltip.style.display = "";
-              document.body.removeEventListener("mousedown", hideIfNotInTooltip);
-              document.body.removeEventListener("focusin", hideIfNotInTooltip);
+              document.removeEventListener("mousedown", hideIfNotInTooltip);
+              document.removeEventListener("focusin", hideIfNotInTooltip);
           };
 
           const hideIfNotInTooltip = (evt) => tooltip.contains(evt.target) || hideTooltip();
 
           const addedChoiceKeys = () => {
               const keys = new Set();
-              const elts = tooltip.parentElement.querySelectorAll(".pe-tooltip ~ [data-key]");
+              const elts = tooltip.parentElement.nextElementSibling.querySelectorAll("[data-key]");
               elts.forEach((elt) => keys.add(elt.dataset.key));
               return keys;
           };
@@ -81,10 +81,11 @@
           const styleChoices = () => {
               const added = addedChoiceKeys();
               for (const choice of choices.children) {
+                  const classList = choice.classList;
                   if (added.has(choice.dataset.key)) {
-                      choice.classList.add("pe-tooltip--chosen");
+                      classList.add("pe-tooltip--chosen");
                   } else {
-                      choice.classList.remove("pe-tooltip--chosen");
+                      classList.remove("pe-tooltip--chosen");
                   }
               }
           }
@@ -97,8 +98,8 @@
               tooltip.style.display = "block";
               update();
               setTimeout(() => {
-                  document.body.addEventListener("mousedown", hideIfNotInTooltip);
-                  document.body.addEventListener("focusin", hideIfNotInTooltip);
+                  document.addEventListener("mousedown", hideIfNotInTooltip);
+                  document.addEventListener("focusin", hideIfNotInTooltip);
               }, 0);
           };
 
@@ -256,12 +257,13 @@
           border-radius: 3px;
       }
       [data-name='endpoint.uri'] {
-          div {
-              > input::placeholder {
-                  text-align: right;
+          legend + div {
+              display: flex;
+              input {
+                  width: 50%;
               }
-              > input, button {
-                  margin: 4px;
+              input, button {
+                  margin-right: 0.25rem;
               }
               > button {
                   border: none;
