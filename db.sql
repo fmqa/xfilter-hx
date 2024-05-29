@@ -15,6 +15,17 @@ CREATE TABLE egression(
     egressor references endpoint(id)
 );
 
+CREATE TABLE marker(
+    id integer primary key,
+    datum varchar
+);
+
+CREATE TABLE marking(
+    id integer primary key,
+    marked references event(id),
+    mark references marker(id)
+);
+
 INSERT INTO event VALUES(1, 'PHONE_CALL','ACCEPTED');
 INSERT INTO event VALUES(2, 'PHONE_CALL','REJECTED');
 INSERT INTO event VALUES(3, 'PHONE_CALL','ACCEPTED');
@@ -36,6 +47,21 @@ INSERT INTO endpoint VALUES(7, 'mailto:jim@topmail.com');
 INSERT INTO endpoint VALUES(8, 'mailto:bob@topmail.com');
 INSERT INTO endpoint VALUES(9, 'mailto:alice@topmail.com');
 INSERT INTO endpoint VALUES(10, 'mailto:kate@topmail.com');
+
+INSERT INTO marker VALUES(1, 'red');
+INSERT INTO marker VALUES(2, 'green');
+INSERT INTO marker VALUES(3, 'blue');
+
+INSERT INTO marking(marked, mark) VALUES(1, 1);
+INSERT INTO marking(marked, mark) VALUES(2, 1);
+INSERT INTO marking(marked, mark) VALUES(3, 1);
+INSERT INTO marking(marked, mark) VALUES(4, 1);
+INSERT INTO marking(marked, mark) VALUES(5, 1);
+INSERT INTO marking(marked, mark) VALUES(6, 1);
+INSERT INTO marking(marked, mark) VALUES(7, 3);
+INSERT INTO marking(marked, mark) VALUES(8, 3);
+INSERT INTO marking(marked, mark) VALUES(9, 3);
+INSERT INTO marking(marked, mark) VALUES(10, 3);
 
 INSERT INTO egression(egressed, egressor) VALUES(1, 1);
 INSERT INTO egression(egressed, egressor) VALUES(2, 2);

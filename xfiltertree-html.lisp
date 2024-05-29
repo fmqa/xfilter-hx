@@ -19,7 +19,7 @@
   (translate (xfiltertree:node-id node)))
 
 (defun htmlize (node)
-  (let ((*epilogue* nil))
+  (let (*epilogue*)
     (cl-who:with-html-output-to-string (s)
       (:form
        :hx-post *form-post* :hx-swap "none" :hx-trigger "change"
@@ -119,7 +119,7 @@
                             if (!elt || !elt.parentElement) return;~
                             const attr = elt.parentElement.getAttribute('hx-select-oob');~
                             (attr && attr.split(',').includes(selector)) ||~
-                              elt.parentElement.setAttribute(~
+                              elt.parentElement.parentElement.setAttribute(~
                                 'hx-select-oob',~
                                 attr ? attr + ',' + selector : selector);~
                           })('#fieldset--~A')" escaped)))))))

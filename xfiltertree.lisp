@@ -3,6 +3,7 @@
   (:export #:node #:node-id #:node-children
            #:aggregation #:aggregation-bins #:aggregation-p
            #:dynamic #:dynamic-searcher #:dynamic-querier #:dynamic-p
+           #:auto #:auto-limit #:auto-next #:auto-p
            #:copy-node
            #:traverse
            #:traverse-if
@@ -33,6 +34,16 @@
     :reader dynamic-querier
     :initarg :querier)))
 
+(defclass auto (aggregation)
+  ((limit
+    :reader auto-limit
+    :initarg :limit
+    :initform nil)
+   (next
+    :accessor auto-next
+    :initarg :next
+    :initform nil)))
+
 (defgeneric copy-node (nd)
   (:documentation "Clones the given node recursively"))
 
@@ -55,6 +66,14 @@
                  :searcher (dynamic-searcher nd)
                  :querier (dynamic-querier nd)))
 
+(defmethod copy-node ((nd auto))
+  (make-instance 'auto
+                 :id (node-id nd)
+                 :children (mapcar #'copy-node (node-children nd))
+                 :bins (aggregation-bins nd)
+                 :limit (auto-limit nd)
+                 :next (auto-next nd)))
+
 (defun aggregation-p (node)
   "Returns t if NODE is an AGGREGATION"
   (typep node 'aggregation))
@@ -62,6 +81,10 @@
 (defun dynamic-p (node)
   "Return t if NODE is a DYNAMIC node"
   (typep node 'dynamic))
+
+(defun auto-p (node)
+  "Return t if NODE is an AUTO node"
+  (typep node 'auto))
 
 (defun traverse (func node)
   "Calls FUNC on NODE and all its children in depth-first order"

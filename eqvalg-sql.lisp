@@ -3,7 +3,8 @@
   (:export
    #:*join*
    #:sqlize
-   #:sqlize-aggregation))
+   #:sqlize-aggregation
+   #:sqlize-distinct))
 (in-package :eqvalg-sql)
 
 (defparameter *join* nil "associative list of column pairs to EQVALG expressions")
@@ -63,3 +64,10 @@
   (format nil "SELECT COUNT(*) FROM ~{`~A`~^, ~} WHERE ~A"
           (eqvalg:table-names obj)
           (sqlize obj)))
+
+(defun sqlize-distinct (column &key where offset limit)
+  (format nil "SELECT DISTINCT `~A` FROM `~A`~@[ WHERE ~A~]~@[ LIMIT ~A~]~@[ OFFSET ~A~]"
+          (eqvalg:column-name column)
+          (eqvalg:column-table column)
+          (and where (sqlize where))
+          limit offset))

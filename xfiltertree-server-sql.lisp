@@ -8,7 +8,16 @@
                (eqvalg:equality-of (eqvalg:column-of "egression" "egressor")
                                    (eqvalg:column-of "endpoint" "id"))
                (eqvalg:equality-of (eqvalg:column-of "egression" "egressed")
-                                   (eqvalg:column-of "event" "id"))))))
+                                   (eqvalg:column-of "event" "id"))))
+        (cons '("event" . "marking")
+              (eqvalg:equality-of (eqvalg:column-of "marking" "marked")
+                                  (eqvalg:column-of "event" "id")))
+        (cons '("endpoint" . "marking")
+              (eqvalg:conjunction-of
+               (eqvalg:equality-of (eqvalg:column-of "marking" "marked")
+                                   (eqvalg:column-of "egression" "egressed"))
+               (eqvalg:equality-of (eqvalg:column-of "egression" "egressor")
+                                   (eqvalg:column-of "endpoint" "id"))))))
 
 (defun sql-log (statement parameters)
   (hunchentoot:log-message* :INFO "Performing SQL query: ~A~@[; with parameters: ~A~]" statement parameters))
@@ -19,11 +28,15 @@
    (sqlite:with-open-database (db *db*)
      (apply #'sqlite:execute-one-row-m-v db statement parameters))))
 
-(defun compute-aggregations (tree)
-  (let ((eqvalg-sql:*join* *default-join*))
-    (xfiltertree-sql:compute-aggregations tree #'sql-query)))
-
 (defun sql-query-multi (statement &rest parameters)
   (sql-log statement parameters)
   (sqlite:with-open-database (db *db*)
     (apply #'sqlite:execute-to-list db statement parameters)))
+
+(defun compute-aggregations (tree)
+  (let ((eqvalg-sql:*join* *default-join*))
+    (xfiltertree-sql:compute-aggregations tree #'sql-query)))
+
+(defun populate-aggregations (tree)
+  (let ((eqvalg-sql:*join* *default-join*))
+    (xfiltertree-sql:populate-aggregations tree #'sql-query-multi)))
