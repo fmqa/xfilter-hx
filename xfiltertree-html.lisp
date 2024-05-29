@@ -70,9 +70,35 @@
          (mapcar (make-aggregation-bin-htmlizer name)
                  value)))))))
 
+(defun make-auto-aggregation-bin-htmlizer (node)
+  (lambda (id value last)
+    (if last
+        (let ((name (translate id)))
+          (cl-who:with-html-output-to-string (s)
+            (:fieldset
+             :data-leaf "true"
+             :hx-trigger "intersect once"
+             :hx-post (xfiltertree:auto-next-uri node)
+             :hx-swap "afterend"
+             :hx-include "closest form"
+             (:legend :data-i18n "" (cl-who:str name))
+             (cl-who:str
+              (uiop:reduce/strcat
+               (mapcar (make-aggregation-bin-htmlizer name)
+                       value))))))
+        (htmlize-aggregation-bin id value))))
+
 (defmethod htmlize-content ((node xfiltertree:aggregation))
   (uiop:reduce/strcat
    (xfiltertree:aggregation-map #'htmlize-aggregation-bin node)))
+
+(defmethod htmlize-content ((node xfiltertree:auto))
+  (uiop:reduce/strcat
+   (if (xfiltertree:auto-next node)
+       (xfiltertree:aggregation-mapf
+        (make-auto-aggregation-bin-htmlizer node) node)
+       (xfiltertree:aggregation-map
+        #'htmlize-aggregation-bin node))))
 
 (defun htmlize-dynamic-bin (id bins)
   (let* ((name (translate id))

@@ -46,7 +46,9 @@
   (make-instance
    'xfiltertree:auto
    :id (eqvalg:column-of "marking" "mark")
-   :limit 10))
+   ;;:limit 5
+   ;;:next "/fnt/marking.mark"
+   ))
 
 (defun make-singleton-endpoint-node (name aggregations)
   (make-endpoint-node (list (cons name (mapcar #'list aggregations)))))

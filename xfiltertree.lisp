@@ -3,11 +3,12 @@
   (:export #:node #:node-id #:node-children
            #:aggregation #:aggregation-bins #:aggregation-p
            #:dynamic #:dynamic-searcher #:dynamic-querier #:dynamic-p
-           #:auto #:auto-limit #:auto-next #:auto-p
+           #:auto #:auto-limit #:auto-offset #:auto-next #:auto-p #:auto-next-uri
            #:copy-node
            #:traverse
            #:traverse-if
            #:aggregation-map
+           #:aggregation-mapf
            #:aggregation-foreach))
 (in-package :xfiltertree)
 
@@ -38,6 +39,10 @@
   ((limit
     :reader auto-limit
     :initarg :limit
+    :initform nil)
+   (offset
+    :accessor auto-offset
+    :initarg :offset
     :initform nil)
    (next
     :accessor auto-next
@@ -71,6 +76,7 @@
                  :id (node-id nd)
                  :children (mapcar #'copy-node (node-children nd))
                  :bins (aggregation-bins nd)
+                 :offset (auto-offset nd)
                  :limit (auto-limit nd)
                  :next (auto-next nd)))
 
@@ -104,8 +110,24 @@
               (funcall bifunction id bins)))
           (aggregation-bins aggregation)))
 
+(defun aggregation-mapf (trifunction aggregation)
+  "Returns a list with the results of mapping TRIFUNCTION onto
+   the given AGGREGATION node's aggregation pairs. The third argument
+   passed to TRIFUNCTION indicates whether this is the last aggregation"
+  (maplist (lambda (lst)
+             (destructuring-bind (id . bins) (car lst)
+               (funcall trifunction id bins (not (cdr lst)))))
+           (aggregation-bins aggregation)))
+
 (defun aggregation-foreach (bifunction aggregation)
   "Calls BIFUNCTION with the id and bins of each aggregation
    in AGGREGATION"
   (loop for (id . bins) in (aggregation-bins aggregation)
         do (funcall bifunction id bins)))
+
+(defun auto-next-uri (node)
+  (when (auto-next node)
+    (format nil "~A?offset=~A&limit=~A"
+            (auto-next node)
+            (auto-offset node)
+            (auto-limit node))))

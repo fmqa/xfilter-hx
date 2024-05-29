@@ -34,14 +34,22 @@
                                (eqvalg-sql:sqlize-distinct
                                 (car (xfiltertree:node-id node))
                                 :where (cdr (xfiltertree:node-id node))
-                                :limit (1+ (xfiltertree:auto-limit node)))
+                                :limit (when (xfiltertree:auto-limit node)
+                                         (1+ (xfiltertree:auto-limit node)))
+                                :offset (xfiltertree:auto-offset node))
                                (eqvalg-sql:sqlize-distinct
                                 (xfiltertree:node-id node)
-                                :limit (1+ (xfiltertree:auto-limit node)))))))
+                                :limit (when (xfiltertree:auto-limit node)
+                                         (1+ (xfiltertree:auto-limit node)))
+                                :offset (xfiltertree:auto-offset node))))))
      ;; NIL out the pagination info if we're below the pagination limit
-     (if (> (length (xfiltertree:aggregation-bins node)) (xfiltertree:auto-limit node))
-         (setf (xfiltertree:aggregation-bins node) (nbutlast (xfiltertree:aggregation-bins node)))
-         (setf (xfiltertree:auto-next node) nil)))
+     (when (xfiltertree:auto-limit node)
+       (if (> (length (xfiltertree:aggregation-bins node)) (xfiltertree:auto-limit node))
+           (setf (xfiltertree:aggregation-bins node)
+                 (nbutlast (xfiltertree:aggregation-bins node))
+                 (xfiltertree:auto-offset node)
+                 (+ (or (xfiltertree:auto-offset node) 0) (xfiltertree:auto-limit node)))
+           (setf (xfiltertree:auto-next node) nil))))
    tree)
   tree)
 
