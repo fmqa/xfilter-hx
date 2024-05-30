@@ -34,9 +34,13 @@
     (apply #'sqlite:execute-to-list db statement parameters)))
 
 (defun compute-aggregations (tree)
-  (let ((eqvalg-sql:*join* *default-join*))
-    (xfiltertree-sql:compute-aggregations tree #'sql-query)))
+  (eqvalg-sqlite:call-with-database
+   (lambda ()
+     (let ((eqvalg-sql:*join* *default-join*))
+       (xfiltertree-eqvalg:compute-aggregations tree)))))
 
 (defun populate-aggregations (tree)
-  (let ((eqvalg-sql:*join* *default-join*))
-    (xfiltertree-sql:populate-aggregations tree #'sql-query-multi)))
+  (eqvalg-sqlite:call-with-database
+   (lambda ()
+     (let ((eqvalg-sql:*join* *default-join*))
+       (xfiltertree-eqvalg:populate-aggregations tree)))))

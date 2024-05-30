@@ -4,9 +4,8 @@
                "xfiltertree-eqvalg"
                "xfiltertree-html"
                "endpoints-sql"
-               "xfiltertree-sql"
                "hunchentoot"
-               "sqlite")
+               "eqvalg-sqlite")
   :components ((:file "xfiltertree-server-package")
                (:file "xfiltertree-server-helpers"
                 :depends-on ("xfiltertree-server-package"))

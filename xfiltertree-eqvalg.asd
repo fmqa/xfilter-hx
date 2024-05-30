@@ -1,5 +1,5 @@
 (asdf:defsystem xfiltertree-eqvalg
-  :depends-on ("xfiltertree" "eqvalg")
+  :depends-on ("xfiltertree" "eqvalg" "eqvalg-query")
   :components ((:file "xfiltertree-eqvalg"))
   :in-order-to ((test-op (test-op :xfiltertree-eqvalg/test))))
 
