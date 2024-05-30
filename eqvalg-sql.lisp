@@ -3,7 +3,7 @@
   (:export
    #:*join*
    #:sqlize
-   #:sqlize-aggregation
+   #:sqlize-count
    #:sqlize-distinct))
 (in-package :eqvalg-sql)
 
@@ -54,7 +54,7 @@
 (defmethod sqlize ((obj eqvalg:conjunction))
   (format nil "~{~A~^ AND ~}" (mapcar #'sqlize (eqvalg:conjunction-operands obj))))
 
-(defun sqlize-aggregation (obj)
+(defun sqlize-count (obj)
   ;; Fuse the aggregation filter with the joining predicates
   (setf obj (reduce #'eqvalg:coalesce
                     (join-tables (eqvalg:table-names obj))
@@ -65,7 +65,7 @@
           (eqvalg:table-names obj)
           (sqlize obj)))
 
-(defun sqlize-distinct (column &key where offset limit)
+(defun sqlize-distinct (column &optional where offset limit)
   (format nil "SELECT DISTINCT `~A` FROM `~A`~@[ WHERE ~A~]~@[ LIMIT ~A~]~@[ OFFSET ~A~]"
           (eqvalg:column-name column)
           (eqvalg:column-table column)

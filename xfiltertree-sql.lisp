@@ -5,7 +5,7 @@
    #:populate-aggregations))
 (in-package :xfiltertree-sql)
 
-(defun populate-aggregations (tree query)
+(defun populate-aggregations (tree)
   (xfiltertree:traverse-if
    #'xfiltertree:auto-p
    (lambda (node)
@@ -24,24 +24,23 @@
             (if (consp (xfiltertree:node-id node))
                 (lambda (distinct)
                   (list (eqvalg:conjunction-of
-                         (eqvalg:equality-of (car (xfiltertree:node-id node)) (car distinct))
+                         (eqvalg:equality-of (car (xfiltertree:node-id node)) distinct)
                          (cdr (xfiltertree:node-id node)))
                         (list "ALL")))
                 (lambda (distinct)
-                  (list (eqvalg:equality-of (xfiltertree:node-id node) (car distinct))
+                  (list (eqvalg:equality-of (xfiltertree:node-id node) distinct)
                         (list "ALL"))))
             (funcall query (if (consp (xfiltertree:node-id node))
-                               (eqvalg-sql:sqlize-distinct
-                                (car (xfiltertree:node-id node))
-                                :where (cdr (xfiltertree:node-id node))
-                                :limit (when (xfiltertree:auto-limit node)
-                                         (1+ (xfiltertree:auto-limit node)))
-                                :offset (xfiltertree:auto-offset node))
-                               (eqvalg-sql:sqlize-distinct
-                                (xfiltertree:node-id node)
-                                :limit (when (xfiltertree:auto-limit node)
-                                         (1+ (xfiltertree:auto-limit node)))
-                                :offset (xfiltertree:auto-offset node))))))
+                               (funcall (eqvalg-query:distinct (car (xfiltertree:node-id node)))
+                                        (cdr (xfiltertree:node-id node))
+                                        (xfiltertree:auto-offset node)
+                                        (and (xfiltertree:auto-limit node)
+                                             (1+ (xfiltertree:auto-limit node))))
+                               (funcall (eqvalg-query:distinct (xfiltertree:node-id node))
+                                        nil
+                                        (xfiltertree:auto-offset node)
+                                        (and (xfiltertree:auto-limit node)
+                                          (1+ (xfiltertree:auto-limit node))))))))
      ;; NIL out the pagination info if we're below the pagination limit
      (when (xfiltertree:auto-limit node)
        (if (> (length (xfiltertree:aggregation-bins node)) (xfiltertree:auto-limit node))
@@ -53,7 +52,7 @@
    tree)
   tree)
 
-(defun compute-aggregations (tree query)
+(defun compute-aggregations (tree)
   "For all AGGREGATION nodes in TREE, compute aggregation counts for all bins
    based on an SQL data store with the given QUERY function"
   (let (expressions aggregations)
@@ -71,9 +70,7 @@
      tree)
     ;; Convert EQVALG predicate expressions to SQL statements computing the
     ;; count of items that fulfill each expression.
-    (loop with selections = (mapcar #'eqvalg-sql:sqlize-aggregation expressions)
-          with statement = (format nil "SELECT ~{(~A)~^, ~}" selections)
-          with row = (funcall query statement)
+    (loop with row = (eqvalg-query:cardinality expressions)
           for (count pair) in (mapcar #'cons row aggregations)
           do (setf (cdr pair) count))
     tree))
