@@ -19,7 +19,7 @@
                (eqvalg:equality-of (eqvalg:column-of "egression" "egressor")
                                    (eqvalg:column-of "endpoint" "id"))))))
 
-(defun sql-log (statement parameters)
+(defun sql-log (statement &optional parameters)
   (hunchentoot:log-message* :INFO "Performing SQL query: ~A~@[; with parameters: ~A~]" statement parameters))
 
 (defun sql-query (statement &rest parameters)
@@ -34,13 +34,13 @@
     (apply #'sqlite:execute-to-list db statement parameters)))
 
 (defun compute-aggregations (tree)
-  (eqvalg-sqlite:call-with-database
-   (lambda ()
-     (let ((eqvalg-sql:*join* *default-join*))
-       (xfiltertree-eqvalg:compute-aggregations tree)))))
+  (sqlite:with-open-database (db *db*)
+    (let ((eqvalg-sql:*join* *default-join*)
+          (sql-client:*tap* #'sql-log))
+      (xfiltertree-eqvalg:compute-aggregations tree (eqvalg-sql:cardinalities-in db)))))
 
 (defun populate-aggregations (tree)
-  (eqvalg-sqlite:call-with-database
-   (lambda ()
-     (let ((eqvalg-sql:*join* *default-join*))
-       (xfiltertree-eqvalg:populate-aggregations tree)))))
+  (sqlite:with-open-database (db *db*)
+    (let ((eqvalg-sql:*join* *default-join*)
+          (sql-client:*tap* #'sql-log))
+      (xfiltertree-eqvalg:populate-aggregations tree (eqvalg-sql:distinct-in db)))))

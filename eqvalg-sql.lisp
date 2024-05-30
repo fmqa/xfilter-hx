@@ -4,7 +4,13 @@
    #:*join*
    #:sqlize
    #:sqlize-count
-   #:sqlize-distinct))
+   #:sqlize-distinct
+   #:*tap*
+   #:query
+   #:cardinalities
+   #:cardinalities-in
+   #:distinct
+   #:distinct-in))
 (in-package :eqvalg-sql)
 
 (defparameter *join* nil "associative list of column pairs to EQVALG expressions")
@@ -71,3 +77,21 @@
           (eqvalg:column-table column)
           (and where (sqlize where))
           limit offset))
+
+(defun cardinalities (db terms)
+  (car
+   (sql-client:query
+    db
+    (format nil "SELECT ~{(~A)~^, ~}" (mapcar #'sqlize-count terms)))))
+
+(defun cardinalities-in (db)
+  (lambda (terms) (cardinalities db terms)))
+
+(defun distinct (db column)
+  (lambda (where offset limit)
+    (mapcar
+     #'car
+     (sql-client:query db (sqlize-distinct column where offset limit)))))
+
+(defun distinct-in (db)
+  (lambda (column) (distinct db column)))

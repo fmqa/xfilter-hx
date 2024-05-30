@@ -1,5 +1,5 @@
 (asdf:defsystem eqvalg-sql
-  :depends-on ("eqvalg")
+  :depends-on ("eqvalg" "sql-client")
   :components ((:file "eqvalg-sql"))
   :in-order-to ((test-op (test-op :eqvalg-sql/test))))
 

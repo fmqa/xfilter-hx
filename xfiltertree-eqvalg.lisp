@@ -73,7 +73,7 @@
    tree)
   tree)
 
-(defun populate-aggregations (tree)
+(defun populate-aggregations (tree distinct)
   (xfiltertree:traverse-if
    #'xfiltertree:auto-p
    (lambda (node)
@@ -91,7 +91,7 @@
                          (eqvalg:equality-of (car (xfiltertree:node-id node)) distinct)
                          (cdr (xfiltertree:node-id node)))
                         (list "ALL")))
-                (funcall (eqvalg-query:distinct (car (xfiltertree:node-id node)))
+                (funcall (funcall distinct (car (xfiltertree:node-id node)))
                          (cdr (xfiltertree:node-id node))
                          (xfiltertree:auto-offset node)
                          (and (xfiltertree:auto-limit node)
@@ -102,7 +102,7 @@
                 (lambda (distinct)
                   (list (eqvalg:equality-of (xfiltertree:node-id node) distinct)
                         (list "ALL")))
-                (funcall (eqvalg-query:distinct (xfiltertree:node-id node))
+                (funcall (funcall distinct (xfiltertree:node-id node))
                          nil
                          (xfiltertree:auto-offset node)
                          (and (xfiltertree:auto-limit node)
@@ -118,7 +118,7 @@
    tree)
   tree)
 
-(defun compute-aggregations (tree)
+(defun compute-aggregations (tree cardinalities)
   "For all AGGREGATION nodes in TREE, compute aggregation counts for all bins
    based on an SQL data store with the given QUERY function"
   (let (expressions aggregations)
@@ -134,9 +134,9 @@
           (push bins aggregations))
         node))
      tree)
-    ;; Convert EQVALG predicate expressions to SQL statements computing the
-    ;; count of items that fulfill each expression.
-    (loop with row = (eqvalg-query:cardinality expressions)
-          for (count pair) in (mapcar #'cons row aggregations)
+    ;; Determine cardinality of EQVALG predicate expressions, assign
+    ;; cardinalities to counts
+    (loop with counts = (funcall cardinalities expressions)
+          for (count pair) in (mapcar #'cons counts aggregations)
           do (setf (cdr pair) count))
     tree))
