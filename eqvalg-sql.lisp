@@ -78,20 +78,20 @@
           (and where (sqlize where))
           limit offset))
 
-(defun cardinalities (db terms)
+(defun cardinalities (query terms)
   (car
-   (sql-client:query
-    db
+   (funcall
+    query
     (format nil "SELECT ~{(~A)~^, ~}" (mapcar #'sqlize-count terms)))))
 
-(defun cardinalities-in (db)
-  (lambda (terms) (cardinalities db terms)))
+(defun cardinalities-in (query)
+  (lambda (terms) (cardinalities query terms)))
 
-(defun distinct (db column)
+(defun distinct (query column)
   (lambda (where offset limit)
     (mapcar
      #'car
-     (sql-client:query db (sqlize-distinct column where offset limit)))))
+     (funcall query (sqlize-distinct column where offset limit)))))
 
-(defun distinct-in (db)
-  (lambda (column) (distinct db column)))
+(defun distinct-in (query)
+  (lambda (column) (distinct query column)))
