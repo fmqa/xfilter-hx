@@ -34,6 +34,7 @@
   (cl-who:with-html-output-to-string (s)
     (:fieldset
      :data-name (node-name node)
+     :data-level level
      (:legend :data-i18n ""
               (cl-who:str (node-name node)))
      (cl-who:str (htmlize-content node))
@@ -126,7 +127,7 @@
                              attrs.split(',').filter(attr => attr !== id).join(','));~
                            htmx.remove('#fieldset--~A');~
                          })(htmx.closest(this, '[hx-select-oob]'),~
-                             '#fieldset--~A')" escaped escaped))
+                           '#fieldset--~A')" escaped escaped))
         "&#10006;")
        (:legend (cl-who:str name))
        (:input :type "hidden" :name "dynamic"
@@ -141,11 +142,11 @@
          (format
           nil
           "((selector) => {~
-                            const elt = htmx.find(selector);~
-                            if (!elt || !elt.parentElement) return;~
-                            const attr = elt.parentElement.getAttribute('hx-select-oob');~
+                            const elt = htmx.closest(selector, '[data-level]');~
+                            if (!elt) return;~
+                            const attr = elt.getAttribute('hx-select-oob');~
                             (attr && attr.split(',').includes(selector)) ||~
-                              elt.parentElement.parentElement.setAttribute(~
+                              elt.setAttribute(~
                                 'hx-select-oob',~
                                 attr ? attr + ',' + selector : selector);~
                           })('#fieldset--~A')" escaped)))))))
