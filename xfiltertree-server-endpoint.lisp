@@ -13,10 +13,10 @@
                       (fql:stringify
                        (eqvalg:equality-of
                         (eqvalg:column-of "endpoint" "uri") uri)))))))
-    (endpoints-sql:endpoint-search #'default-parametrized-query needle))))
+    (endpoints-sql:endpoint-search (default-parametrized-query) needle))))
 
 (defun endpoint-filter-html (key clauses)
-  (let ((endpoint (endpoints-sql:endpoint-by-uri #'default-parametrized-query key)))
+  (let ((endpoint (endpoints-sql:endpoint-by-uri (default-parametrized-query) key)))
     (when endpoint
       (let* ((name (eqvalg:equality-of (eqvalg:column-of "endpoint" "uri") key))
              (tree (xfiltertree-bom:make-singleton-endpoint-node name '("ALL"))))
