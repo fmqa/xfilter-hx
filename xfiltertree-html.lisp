@@ -35,6 +35,8 @@
     (:fieldset
      :data-name (node-name node)
      :data-level level
+     :data-leaf (if (xfiltertree:node-children node) "false" "true")
+     :data-mode (string-downcase (string (type-of node)))
      (:legend :data-i18n ""
               (cl-who:str (node-name node)))
      (cl-who:str (htmlize-content node))
@@ -64,7 +66,7 @@
   (let ((name (translate id)))
     (cl-who:with-html-output-to-string (s)
       (:fieldset
-       :data-leaf "true"
+       :data-bin "true"
        (:legend :data-i18n "" (cl-who:str name))
        (cl-who:str
         (uiop:reduce/strcat
@@ -77,7 +79,7 @@
         (let ((name (translate id)))
           (cl-who:with-html-output-to-string (s)
             (:fieldset
-             :data-leaf "true"
+             :data-bin "true"
              :hx-trigger "intersect once"
              :hx-post (xfiltertree:auto-next-uri node)
              :hx-swap "afterend"
@@ -108,7 +110,7 @@
     (cl-who:with-html-output-to-string (s)
       (:fieldset
        :id (format nil "fieldset--~A" escaped)
-       :data-leaf "true"
+       :data-bin "true"
        :data-key (cl-who:escape-string name)
        (:button
         :type "button"
@@ -128,7 +130,7 @@
                            htmx.remove('#fieldset--~A');~
                          })(htmx.closest(this, '[hx-select-oob]'),~
                            '#fieldset--~A')" escaped escaped))
-        "&#10006;")
+        "&#128473;")
        (:legend (cl-who:str name))
        (:input :type "hidden" :name "dynamic"
                :value (cl-who:escape-string clause))

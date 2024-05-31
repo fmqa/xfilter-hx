@@ -169,6 +169,7 @@
           });
           elt.addEventListener("focus", showTooltip);
           elt.setAttribute("placeholder", "\u2315");
+          elt.setAttribute("autocomplete", "off");
       };
       configure = (elt) => {
           progressiveEnhanceSearchInput(elt.querySelector("#search--endpoint_2E_uri"));
@@ -203,7 +204,7 @@
       input[type=checkbox]:checked + label {
           background-color: #85cee1;
       }
-      fieldset[data-leaf] {
+      fieldset[data-bin=true] {
           padding: 0;
           padding-left: 0.5rem;
           border: none;
@@ -212,7 +213,7 @@
           justify-content: space-between;
           > * { margin-right: 0.5rem; }
       }
-      fieldset[data-leaf] > legend {
+      fieldset[data-bin=true] > legend {
           display: contents;
       }
       .pe-tooltip {
@@ -260,7 +261,7 @@
       //    overflow-y: scroll;
       //    height: 100px;
       //}
-      [data-name='endpoint.uri'] {
+      [data-mode=dynamic] {
           legend + div {
               display: flex;
               input {
@@ -277,7 +278,7 @@
                   cursor: pointer;
               }
           }
-          [data-leaf] {
+          [data-bin=true] {
               display: grid;
               grid-template-columns: auto 1fr auto;
               padding-left: 0;
@@ -286,8 +287,11 @@
                   background: none;
                   color: #d24231;
                   cursor: pointer;
-                  width: 1rem;
-                  height: 1rem;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  font-size: 1rem;
+                  box-sizing: content-box;
               }
           }
       }
