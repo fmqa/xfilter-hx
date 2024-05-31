@@ -10,6 +10,8 @@
   :components ((:file "xfiltertree-server-package")
                (:file "xfiltertree-server-helpers"
                 :depends-on ("xfiltertree-server-package"))
+               (:file "xfiltertree-server-db"
+                :depends-on ("xfiltertree-server-package"))
                (:file "xfiltertree-server-sql"
                 :depends-on ("xfiltertree-server-package"))
                (:file "xfiltertree-server-fnt"
