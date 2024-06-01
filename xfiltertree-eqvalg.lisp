@@ -14,6 +14,33 @@
 (defun relatedp (column expression)
   (related-subjectp column (eqvalg:subject expression)))
 
+(defun node-subject (node)
+  "Returns COLUMN if the NODE-ID of NODE is a (COLUMN . DISCRIMINATOR) pair,
+   otherwise returns NODE-ID"
+  (let ((id (xfiltertree:node-id node)))
+    (if (eqvalg:column-p id) id (car id))))
+
+(defun node-where (node)
+  "Returns DISCRIMINATOR if the NODE-ID is a (COLUMN . DISCRIMINATOR) pair"
+  (let ((id (xfiltertree:node-id node)))
+    (when (consp id) (cdr id))))
+
+(defun node-subject-where (node)
+  "Returns a COLUMN if NODE-ID is an EQVALG:COLUMN, otherwise returns the
+   values DISCRIMINATOR and PAIR if NODE-ID is a pair of the former two"
+  (let ((id (xfiltertree:node-id node)))
+    (if (eqvalg:column-p id)
+        id
+        (values (car id) (cdr id)))))
+
+(defun node-equality-of (node to)
+  "Return an EQVALG:EQUALITY term of the NODE's column to TO, ANDing
+   any conditional clauses should they exist"
+  (multiple-value-bind (subject where) (node-subject-where node)
+    (if where
+        (eqvalg:coalesce (eqvalg:equality-of subject to) where)
+        (eqvalg:equality-of subject to))))
+
 (defun constrain (tree constraints)
   "Constrains the EQVALG filters for all aggregations in TREE, coalescing
    them with CONSTRAINTS. This modifies TREE."
@@ -22,16 +49,11 @@
    #'xfiltertree:aggregation-p
    ;; AGGREGATION node visitor
    (lambda (node)
-     ;; If the ID is an EQVALG column, simply retrieve it. If not,
-     ;; assume it is a (COLUMN . DISCRIMINATOR) pair, and retrieve the
-     ;; COLUMN (CAR) of the pair.
-     (let* ((column (if (eqvalg:column-p (xfiltertree:node-id node))
-                        (xfiltertree:node-id node)
-                        (car (xfiltertree:node-id node))))
-            ;; Filter out from CONSTRAINTS all constraints related to this
-            ;; node's column - this is to avoid applying a node's own constraints
-            ;; to itself
-            (applicable (remove-if (lambda (cst) (relatedp column cst)) constraints)))
+     ;; Filter out from CONSTRAINTS all constraints related to this
+     ;; node's subject column - this is to avoid applying a node's own
+     ;; constraints onto itself
+     (let* ((subject (node-subject node))
+            (applicable (remove-if (lambda (cst) (relatedp subject cst)) constraints)))
        ;; Reassign the node's aggregations after coalescing the filter expression
        ;; with all applicable (non-reflexive) constraints. Note that only the CAR
        ;; of the aggregation bin is changed. The CDR is retained from the original
@@ -58,22 +80,24 @@
    (lambda (node)
      ;; For each DYNAMIC node, loop through all given aggregation pairs
      ;; and push them into the node's AGGREGATION-BINS if compatibility
-     ;; between the aggregation's EQVALG object and the NODE-ID is
-     ;; established
-     (loop with node-subject = (if (eqvalg:column-p (xfiltertree:node-id node))
-                                   (xfiltertree:node-id node)
-                                   (car (xfiltertree:node-id node)))
+     ;; between the aggregation's EQVALG object and the NODE's subject
+     ;; column is established
+     (loop with nsubject = (node-subject node)
            for (clause . bins) in dynamic
-           for clause-subject = (eqvalg:subject clause)
-           do (progn (when (consp clause-subject)
-                       (setf clause-subject (car (last clause-subject))))
-                     (when (equalp node-subject clause-subject)
+           for csubject = (eqvalg:subject clause)
+           do (progn (when (consp csubject)
+                       (setf csubject (car (last csubject))))
+                     (when (equalp nsubject csubject)
                        (push (cons clause (mapcar #'list bins))
                              (xfiltertree:aggregation-bins node))))))
    tree)
   tree)
 
 (defun populate-aggregations (tree distinct)
+  "Populate all AUTO nodes in TREE with aggregations based on DISTINCT values
+   of the nodes' subject columns. DISTINCT should take a COLUMN and return a
+   function taking three optional parameters WHERE OFFSET LIMIT, where WHERE
+   is an EQVALG term for filtering and OFFSET, LIMIT control pagination"
   (xfiltertree:traverse-if
    #'xfiltertree:auto-p
    (lambda (node)
@@ -81,38 +105,18 @@
      ;; predicates of the form COLUMN=X, where each X is a distinct value
      ;; of COLUMN
      (setf (xfiltertree:aggregation-bins node)
-           (if (consp (xfiltertree:node-id node))
-               ;; If id is a conditional column of the form (COLUMN . CONDITION)
-               ;; then the resulting aggregation clauses should be
-               ;; COLUMN=X & CONDITION.
-               (mapcar
-                (lambda (distinct)
-                  (list (eqvalg:conjunction-of
-                         (eqvalg:equality-of (car (xfiltertree:node-id node)) distinct)
-                         (cdr (xfiltertree:node-id node)))
-                        (list "ALL")))
-                (funcall (funcall distinct (car (xfiltertree:node-id node)))
-                         ; where
-                         (cdr (xfiltertree:node-id node))
-                         ; offset
-                         (xfiltertree:auto-offset node)
-                         ; limit
-                         (and (xfiltertree:auto-limit node)
-                              (1+ (xfiltertree:auto-limit node)))))
-               ;; Otherwise, if the id is a simple column, the resulting
-               ;; aggregation clauses should be of the form COLUMN=X.
-               (mapcar
-                (lambda (distinct)
-                  (list (eqvalg:equality-of (xfiltertree:node-id node) distinct)
-                        (list "ALL")))
-                (funcall (funcall distinct (xfiltertree:node-id node))
-                         ; where
-                         nil
-                         ; offset
-                         (xfiltertree:auto-offset node)
-                         ; limit
-                         (and (xfiltertree:auto-limit node)
-                              (1+ (xfiltertree:auto-limit node)))))))
+           (mapcar
+            (lambda (distinct)
+              (list (node-equality-of node distinct)
+                    (list "ALL")))
+            (funcall (funcall distinct (node-subject node))
+                     ; where
+                     (node-where node)
+                     ; offset
+                     (xfiltertree:auto-offset node)
+                     ; limit
+                     (and (xfiltertree:auto-limit node)
+                          (1+ (xfiltertree:auto-limit node))))))
      ;; Update pagination information if a limit exists
      (when (xfiltertree:auto-limit node)
        (if (> (length (xfiltertree:aggregation-bins node)) (xfiltertree:auto-limit node))
@@ -128,7 +132,8 @@
 
 (defun compute-aggregations (tree cardinalities)
   "For all AGGREGATION nodes in TREE, compute aggregation counts for all bins
-   based on an SQL data store with the given QUERY function"
+   using a CARDINALITIES function. CARDINALITIES should take a list of terms
+   to compute the cardinalities for"
   (let (expressions aggregations)
     (xfiltertree:traverse-if
      ;; Visit aggregation nodes only
