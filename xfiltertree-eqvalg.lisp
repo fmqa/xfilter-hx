@@ -60,12 +60,12 @@
      ;; and push them into the node's AGGREGATION-BINS if compatibility
      ;; between the aggregation's EQVALG object and the NODE-ID is
      ;; established
-     (loop for (clause . bins) in dynamic
+     (loop with node-subject = (if (eqvalg:column-p (xfiltertree:node-id node))
+                                   (xfiltertree:node-id node)
+                                   (car (xfiltertree:node-id node)))
+           for (clause . bins) in dynamic
            for clause-subject = (eqvalg:subject clause)
-           for node-subject = (xfiltertree:node-id node)
-           do (progn (when (consp node-subject)
-                       (setf node-subject (car node-subject)))
-                     (when (consp clause-subject)
+           do (progn (when (consp clause-subject)
                        (setf clause-subject (car (last clause-subject))))
                      (when (equalp node-subject clause-subject)
                        (push (cons clause (mapcar #'list bins))
@@ -92,8 +92,11 @@
                          (cdr (xfiltertree:node-id node)))
                         (list "ALL")))
                 (funcall (funcall distinct (car (xfiltertree:node-id node)))
+                         ; where
                          (cdr (xfiltertree:node-id node))
+                         ; offset
                          (xfiltertree:auto-offset node)
+                         ; limit
                          (and (xfiltertree:auto-limit node)
                               (1+ (xfiltertree:auto-limit node)))))
                ;; Otherwise, if the id is a simple column, the resulting
@@ -103,17 +106,22 @@
                   (list (eqvalg:equality-of (xfiltertree:node-id node) distinct)
                         (list "ALL")))
                 (funcall (funcall distinct (xfiltertree:node-id node))
+                         ; where
                          nil
+                         ; offset
                          (xfiltertree:auto-offset node)
+                         ; limit
                          (and (xfiltertree:auto-limit node)
                               (1+ (xfiltertree:auto-limit node)))))))
-     ;; NIL out the pagination info if we're below the pagination limit
+     ;; Update pagination information if a limit exists
      (when (xfiltertree:auto-limit node)
        (if (> (length (xfiltertree:aggregation-bins node)) (xfiltertree:auto-limit node))
            (setf (xfiltertree:aggregation-bins node)
                  (nbutlast (xfiltertree:aggregation-bins node))
+                 ;; Set offset to offset+limit, i.e. boundary of the next page
                  (xfiltertree:auto-offset node)
                  (+ (or (xfiltertree:auto-offset node) 0) (xfiltertree:auto-limit node)))
+           ;; NIL out paging information if no next page exists
            (setf (xfiltertree:auto-next node) nil))))
    tree)
   tree)
